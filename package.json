@@ -1,0 +1,9 @@
+{
+  "name": "russian-verse-live",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/parser.test.mjs && node tests/static.test.mjs"
+  }
+}

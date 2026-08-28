@@ -1,0 +1,19 @@
+{
+  "name": "Russian Verse Listener",
+  "short_name": "Verse Listener",
+  "description": "Free Russian sermon Bible verse detector.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#171717",
+  "theme_color": "#171717",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

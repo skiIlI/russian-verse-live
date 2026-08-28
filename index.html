@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#171717" />
+  <meta name="description" content="Free Russian sermon Bible verse detector." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Verse Listener" />
+  <title>Russian Verse Listener</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <strong>Automation Core</strong>
+      <div class="header-actions">
+        <button id="installButton" class="icon-button" type="button" aria-label="Install or download app" title="Install or download">⇩</button>
+        <button id="themeButton" class="icon-button" type="button" aria-label="Toggle theme" title="Toggle theme">◐</button>
+      </div>
+    </header>
+
+    <nav class="tab-list" aria-label="Automation sections">
+      <span>School</span>
+      <span>Browser</span>
+      <span>Windows</span>
+      <span>Sermon app</span>
+      <span class="active">Miscellaneous</span>
+    </nav>
+
+    <section class="content" aria-labelledby="liveAudioHeading">
+      <div class="section-heading">
+        <h1 id="liveAudioHeading">Live Audio</h1>
+        <span id="phase" class="phase"><i></i><span>Not started</span></span>
+      </div>
+
+      <article id="listenerCard" class="listener-card">
+        <div class="listener-top">
+          <div class="listener-title-row">
+            <div id="listenerIcon" class="listener-icon" aria-hidden="true">📖</div>
+            <div class="listener-copy">
+              <h2>Russian Verse Detector</h2>
+              <p id="message">Ready to listen for Russian Bible references.</p>
+            </div>
+          </div>
+
+          <div class="listener-actions">
+            <button id="startButton" class="action start" type="button">Start Listening</button>
+            <button id="stopButton" class="action stop" type="button" disabled>Stop Listening</button>
+          </div>
+        </div>
+
+        <section class="latest-section" aria-labelledby="latestLabel">
+          <div class="label-row">
+            <h3 id="latestLabel">Latest verse</h3>
+            <span id="contextChip" class="context-chip" hidden></span>
+          </div>
+          <div id="latestEmpty" class="latest-empty">Waiting for a book, chapter, and verse.</div>
+          <div id="latestResult" class="latest-result" hidden>
+            <strong id="latestReference"></strong>
+            <p id="latestSource"></p>
+          </div>
+        </section>
+
+        <section class="transcript-section" aria-labelledby="transcriptLabel">
+          <h3 id="transcriptLabel">Live transcript</h3>
+          <div id="transcriptList" class="transcript-list">
+            <p class="empty-line">No transcript yet.</p>
+          </div>
+        </section>
+
+        <section id="excerptFolder" class="excerpt-folder">
+          <button id="folderButton" class="folder-button" type="button" aria-expanded="false">
+            <span class="folder-icon" aria-hidden="true">📁</span>
+            <span class="folder-title">Test excerpts</span>
+            <span class="folder-count">5</span>
+            <span class="chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div id="folderContent" class="folder-content" hidden>
+            <div class="mode-switch" role="group" aria-label="Excerpt playback mode">
+              <button class="mode active" type="button" data-mode="direct" aria-pressed="true">🔇 Direct</button>
+              <button class="mode" type="button" data-mode="audible" aria-pressed="false">🔊 Audible</button>
+            </div>
+            <div id="excerptList" class="excerpt-list"></div>
+            <p class="test-note">Tests use verified sermon transcripts. Start Listening tests the live microphone.</p>
+          </div>
+        </section>
+      </article>
+    </section>
+  </main>
+
+  <dialog id="installDialog" class="install-dialog">
+    <button id="closeInstallButton" class="dialog-close" type="button" aria-label="Close">×</button>
+    <div class="dialog-icon">⇩</div>
+    <h2>Install the listener</h2>
+    <p id="installInstructions">Use your browser menu to add this app to your Home Screen.</p>
+    <button id="nativeInstallButton" class="dialog-primary" type="button" hidden>Install app</button>
+    <a class="dialog-download" href="https://github.com/skiIlI/russian-verse-live/releases/latest/download/russian-verse-live.zip">Download app files</a>
+  </dialog>
+
+  <noscript>This listener requires JavaScript.</noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
