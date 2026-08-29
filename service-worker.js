@@ -1,10 +1,16 @@
-const CACHE_NAME = "russian-verse-live-v2";
+const CACHE_NAME = "verse-listener-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js?v=2",
-  "./parser.js?v=2",
+  "./styles.css?v=3",
+  "./app.js?v=3",
+  "./parser.js?v=3",
+  "./audio-ring-buffer.js?v=3",
+  "./audio-worklet.js?v=3",
+  "./feedback-store.js?v=3",
+  "./feedback-ui.js?v=3",
+  "./source-context.js?v=3",
+  "./excerpts.js?v=3",
   "./manifest.webmanifest",
   "./assets/icon.svg",
   "./assets/malachi-4-5-6.wav",

@@ -1,72 +1,33 @@
-import { RussianVerseReferenceDetector } from "./parser.js?v=2";
+import { BibleVerseReferenceDetector } from "./parser.js?v=3";
+import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=3";
+import { configureFeedbackUI } from "./feedback-ui.js?v=3";
+import { downloadCurrentSourceContext } from "./source-context.js?v=3";
+import { EXCERPTS } from "./excerpts.js?v=3";
 
-const EXCERPTS = [
-  {
-    id: "malachi-4-5-6",
-    expectedReference: "Malachi 4:5–6",
-    sourceTimestamp: "24:08",
-    file: "assets/malachi-4-5-6.wav",
-    transcript: "Первое место Малахии, последние два стишка Старого Завета. Написано такие слова: 5 и 6 стих.",
-  },
-  {
-    id: "first-corinthians-16-14",
-    expectedReference: "1 Corinthians 16:14",
-    sourceTimestamp: "34:31",
-    file: "assets/first-corinthians-16-14.wav",
-    transcript: "Это первое коринфианом, 16 глава. 14 стих. Все у вас да будет с любовью.",
-  },
-  {
-    id: "mark-10-13",
-    expectedReference: "Mark 10:13",
-    sourceTimestamp: "59:48",
-    file: "assets/mark-10-13.wav",
-    transcript: "Я читаю Евангелие от Марка с сокращением времени. Читаю Марка, 10 глава, с 13 стиха. И приносили к нему детей, чтобы он прикоснулся к ним.",
-  },
-  {
-    id: "genesis-18-19",
-    expectedReference: "Genesis 18:19",
-    sourceTimestamp: "1:02:09",
-    file: "assets/genesis-18-19.wav",
-    transcript: "Я не буду много распространяться. Читаю БТЕ 18 глава, 19 стих. Братья, обратите внимание, ибо я избрал его.",
-  },
-  {
-    id: "luke-12-13",
-    expectedReference: "Luke 12:13",
-    sourceTimestamp: "1:45:59",
-    file: "assets/luke-12-13.wav",
-    transcript: "Хвала и благодарность Ему. Текст Писания записан Евангелистом Лукой в 12 главе с 13 стиха.",
-  },
-];
-
-const detector = new RussianVerseReferenceDetector();
+const APP_VERSION = "2.0.0";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const elements = {
-  listenerCard: document.querySelector("#listenerCard"),
-  listenerIcon: document.querySelector("#listenerIcon"),
-  message: document.querySelector("#message"),
-  phase: document.querySelector("#phase"),
-  phaseText: document.querySelector("#phase span"),
-  startButton: document.querySelector("#startButton"),
-  stopButton: document.querySelector("#stopButton"),
-  contextChip: document.querySelector("#contextChip"),
-  latestEmpty: document.querySelector("#latestEmpty"),
-  latestResult: document.querySelector("#latestResult"),
-  latestReference: document.querySelector("#latestReference"),
-  latestSource: document.querySelector("#latestSource"),
-  transcriptList: document.querySelector("#transcriptList"),
-  excerptFolder: document.querySelector("#excerptFolder"),
-  folderButton: document.querySelector("#folderButton"),
-  folderContent: document.querySelector("#folderContent"),
-  excerptList: document.querySelector("#excerptList"),
-  modeButtons: [...document.querySelectorAll(".mode")],
-  installButton: document.querySelector("#installButton"),
-  installDialog: document.querySelector("#installDialog"),
-  installInstructions: document.querySelector("#installInstructions"),
-  nativeInstallButton: document.querySelector("#nativeInstallButton"),
-  closeInstallButton: document.querySelector("#closeInstallButton"),
-  themeButton: document.querySelector("#themeButton"),
+const LANGUAGE = {
+  ru: { recognition: "ru-RU", name: "Russian", ready: "Ready to listen for Russian Bible references." },
+  en: { recognition: "en-US", name: "English", ready: "Ready to listen for English Bible references." },
 };
 
+const elements = Object.fromEntries([
+  "listenerCard", "listenerIcon", "message", "phase", "startButton", "stopButton", "contextChip",
+  "latestEmpty", "latestResult", "latestReference", "latestSource", "transcriptList", "excerptFolder",
+  "folderButton", "folderContent", "excerptList", "testNote", "reportsFolder", "reportsFolderButton",
+  "reportsFolderContent", "reportsList", "reportsCount", "reportFeedbackButton", "feedbackDialog",
+  "closeFeedbackButton", "feedbackForm", "feedbackKind", "feedbackExpected", "feedbackCaught",
+  "feedbackDuration", "feedbackNote", "feedbackTranscriptPreview", "feedbackStatus", "moreButton",
+  "moreDialog", "closeMoreButton", "installInstructions", "nativeInstallButton", "downloadSourceButton",
+  "sourceDownloadStatus", "themeButton",
+].map((id) => [id, document.querySelector(`#${id}`)]));
+elements.phaseText = document.querySelector("#phase span");
+elements.modeButtons = [...document.querySelectorAll(".mode")];
+elements.languageButtons = [...document.querySelectorAll(".language")];
+
+let language = localStorage.getItem("verse-language") === "en" ? "en" : "ru";
+const detector = new BibleVerseReferenceDetector(language);
+const rollingAudio = new RollingAudioBuffer(60);
 let recognition = null;
 let recognitionRunning = false;
 let wantsListening = false;
@@ -74,7 +35,9 @@ let restartTimer = null;
 let playbackMode = "direct";
 let activeTestId = null;
 let activeAudio = null;
+let activeSpeech = null;
 let transcriptHistory = [];
+let latestDetected = null;
 let wakeLock = null;
 let installPrompt = null;
 
@@ -92,28 +55,23 @@ function updateControls() {
   const busy = Boolean(activeTestId);
   elements.startButton.disabled = wantsListening || busy;
   elements.stopButton.disabled = !wantsListening && !busy;
+  for (const button of elements.languageButtons) button.disabled = wantsListening || busy;
+  const excerpts = EXCERPTS[language];
   for (const button of elements.excerptList.querySelectorAll("button")) {
     button.disabled = busy;
     button.classList.toggle("active", button.dataset.id === activeTestId);
     const play = button.querySelector(".excerpt-play");
-    if (play) {
-      const index = EXCERPTS.findIndex((excerpt) => excerpt.id === button.dataset.id) + 1;
-      play.textContent = button.dataset.id === activeTestId
-        ? (playbackMode === "audible" ? "🔊" : "•••")
-        : `▶${index}`;
-    }
+    const index = excerpts.findIndex((excerpt) => excerpt.id === button.dataset.id) + 1;
+    if (play) play.textContent = button.dataset.id === activeTestId
+      ? (playbackMode === "audible" ? "🔊" : "•••")
+      : `▶${index}`;
   }
 }
 
 function renderContext() {
   const context = detector.readContext();
-  if (!context.book) {
-    elements.contextChip.hidden = true;
-    elements.contextChip.textContent = "";
-    return;
-  }
-  elements.contextChip.textContent = `${context.book}${context.chapter ? ` ${context.chapter}` : ""}`;
-  elements.contextChip.hidden = false;
+  elements.contextChip.hidden = !context.book;
+  elements.contextChip.textContent = context.book ? `${context.book}${context.chapter ? ` ${context.chapter}` : ""}` : "";
 }
 
 function renderTranscripts() {
@@ -125,16 +83,27 @@ function renderTranscripts() {
     elements.transcriptList.append(empty);
     return;
   }
-  for (const transcript of transcriptHistory.slice(0, 8)) {
+  for (const entry of transcriptHistory.slice(0, 8)) {
     const line = document.createElement("p");
     line.className = "transcript-line";
-    line.lang = "ru";
-    line.textContent = transcript;
+    line.lang = language;
+    line.textContent = entry.text;
     elements.transcriptList.append(line);
   }
 }
 
+function resetSessionView() {
+  detector.reset();
+  transcriptHistory = [];
+  latestDetected = null;
+  renderContext();
+  renderTranscripts();
+  elements.latestEmpty.hidden = false;
+  elements.latestResult.hidden = true;
+}
+
 function announceReference(reference) {
+  latestDetected = reference;
   elements.latestEmpty.hidden = true;
   elements.latestResult.hidden = false;
   elements.latestReference.textContent = reference.display;
@@ -150,7 +119,10 @@ function consumeTranscript(text, { reset = false } = {}) {
   const clean = text.trim();
   if (!clean) return [];
   if (reset) detector.reset();
-  transcriptHistory = [clean, ...transcriptHistory.filter((entry) => entry !== clean)].slice(0, 8);
+  transcriptHistory = [
+    { text: clean, at: new Date().toISOString() },
+    ...transcriptHistory.filter((entry) => entry.text !== clean),
+  ].slice(0, 8);
   const references = detector.consume(clean);
   renderContext();
   renderTranscripts();
@@ -171,7 +143,7 @@ async function requestWakeLock() {
 function configureRecognition() {
   if (!SpeechRecognition || recognition) return;
   recognition = new SpeechRecognition();
-  recognition.lang = "ru-RU";
+  recognition.lang = LANGUAGE[language].recognition;
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
@@ -180,7 +152,7 @@ function configureRecognition() {
     recognitionRunning = true;
     elements.listenerIcon.textContent = "🎙️";
     setPhase("Listening", "active");
-    setMessage("Listening for Russian Bible references…");
+    setMessage(`Listening for ${LANGUAGE[language].name} Bible references…`);
     updateControls();
   };
 
@@ -196,16 +168,13 @@ function configureRecognition() {
     if (["not-allowed", "service-not-allowed", "audio-capture"].includes(event.error)) {
       wantsListening = false;
       recognitionRunning = false;
+      void rollingAudio.stop({ keepAudio: true });
       setPhase("Needs attention", "error");
-      setMessage(event.error === "audio-capture"
-        ? "No microphone is available."
-        : "Microphone permission was not granted.");
+      setMessage(event.error === "audio-capture" ? "No microphone is available." : "Microphone permission was not granted.");
       updateControls();
       return;
     }
-    setMessage(event.error === "no-speech"
-      ? "Still listening…"
-      : "Speech service paused. Reconnecting…");
+    setMessage(event.error === "no-speech" ? "Still listening…" : "Speech service paused. Reconnecting…");
   };
 
   recognition.onend = () => {
@@ -230,9 +199,13 @@ function startRecognition() {
   if (!wantsListening || recognitionRunning || document.visibilityState !== "visible") return;
   configureRecognition();
   try {
-    recognition.start();
+    const track = rollingAudio.audioTrack;
+    if (track) recognition.start(track);
+    else recognition.start();
   } catch (error) {
-    if (error?.name !== "InvalidStateError") {
+    if (rollingAudio.audioTrack && error?.name === "TypeError") {
+      try { recognition.start(); } catch {}
+    } else if (error?.name !== "InvalidStateError") {
       setPhase("Needs attention", "error");
       setMessage("Could not start speech recognition. Try again.");
     }
@@ -246,16 +219,20 @@ async function startListening() {
     return;
   }
   stopActiveTest();
-  detector.reset();
-  transcriptHistory = [];
-  renderContext();
-  renderTranscripts();
-  elements.latestEmpty.hidden = false;
-  elements.latestResult.hidden = true;
+  resetSessionView();
   wantsListening = true;
   setPhase("Starting", "active");
   setMessage("Opening the microphone…");
   updateControls();
+  try {
+    await rollingAudio.start();
+  } catch {
+    wantsListening = false;
+    setPhase("Needs attention", "error");
+    setMessage("The microphone could not be opened. Check browser permission and try again.");
+    updateControls();
+    return;
+  }
   await requestWakeLock();
   startRecognition();
 }
@@ -269,9 +246,10 @@ async function stopListening() {
     try { recognition.stop(); } catch { recognition.abort(); }
   }
   recognitionRunning = false;
+  await rollingAudio.stop({ keepAudio: true });
   elements.listenerIcon.textContent = "📖";
   setPhase("Ready");
-  setMessage("Listening stopped.");
+  setMessage("Listening stopped. Recent audio remains available for feedback.");
   updateControls();
   if (wakeLock) {
     await wakeLock.release().catch(() => {});
@@ -285,6 +263,10 @@ function stopActiveTest() {
     activeAudio.currentTime = 0;
     activeAudio = null;
   }
+  if (activeSpeech) {
+    speechSynthesis.cancel();
+    activeSpeech = null;
+  }
   activeTestId = null;
   updateControls();
 }
@@ -292,43 +274,31 @@ function stopActiveTest() {
 async function runExcerpt(excerpt) {
   if (activeTestId) return;
   if (wantsListening) await stopListening();
-  detector.reset();
-  transcriptHistory = [];
-  renderTranscripts();
-  renderContext();
+  resetSessionView();
   activeTestId = excerpt.id;
   setPhase(playbackMode === "audible" ? "Playing excerpt" : "Testing", "active");
-  setMessage(`${playbackMode === "audible" ? "Audible" : "Direct"} test · ${excerpt.expectedReference}`);
+  setMessage(`${playbackMode === "audible" ? "Speaker" : "Direct"} test · ${excerpt.expectedReference}`);
   updateControls();
 
-  if (playbackMode === "audible") {
+  if (playbackMode === "audible" && excerpt.file) {
     activeAudio = new Audio(excerpt.file);
-    activeAudio.preload = "auto";
-    activeAudio.addEventListener("ended", () => {
-      activeAudio = null;
-      activeTestId = null;
-      setPhase("Ready");
-      updateControls();
-    }, { once: true });
-    try {
-      await activeAudio.play();
-    } catch {
-      activeAudio = null;
-      setMessage("Speaker playback was blocked; the direct detector test will continue.");
-    }
+    activeAudio.addEventListener("ended", finishAudibleTest, { once: true });
+    await activeAudio.play().catch(() => { activeAudio = null; });
+  } else if (playbackMode === "audible" && "speechSynthesis" in window) {
+    activeSpeech = new SpeechSynthesisUtterance(excerpt.transcript);
+    activeSpeech.lang = LANGUAGE[language].recognition;
+    activeSpeech.addEventListener("end", finishAudibleTest, { once: true });
+    speechSynthesis.speak(activeSpeech);
   }
 
   window.setTimeout(() => {
     if (activeTestId !== excerpt.id) return;
     const references = consumeTranscript(excerpt.transcript, { reset: true });
     const matched = references.some((reference) => reference.canonical === excerpt.expectedReference);
-    if (!matched) {
-      setPhase("Needs attention", "error");
-      setMessage(`Expected ${excerpt.expectedReference}, but it was not detected.`);
-    } else {
-      setMessage(`${playbackMode === "audible" ? "Audible" : "Direct"} test passed · ${excerpt.expectedReference}`);
-    }
-    if (playbackMode === "direct" || !activeAudio) {
+    setMessage(matched
+      ? `${playbackMode === "audible" ? "Speaker" : "Direct"} test passed · ${excerpt.expectedReference}`
+      : `Expected ${excerpt.expectedReference}, but it was not detected.`);
+    if (playbackMode === "direct" || (!activeAudio && !activeSpeech)) {
       activeTestId = null;
       setPhase(matched ? "Ready" : "Needs attention", matched ? "idle" : "error");
       updateControls();
@@ -336,14 +306,21 @@ async function runExcerpt(excerpt) {
   }, 850);
 }
 
+function finishAudibleTest() {
+  activeAudio = null;
+  activeSpeech = null;
+  activeTestId = null;
+  setPhase("Ready");
+  updateControls();
+}
+
 function renderExcerpts() {
   elements.excerptList.replaceChildren();
-  EXCERPTS.forEach((excerpt, index) => {
+  EXCERPTS[language].forEach((excerpt, index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "excerpt-row";
     button.dataset.id = excerpt.id;
-    button.title = excerpt.expectedReference;
     button.innerHTML = `
       <span class="excerpt-play">▶${index + 1}</span>
       <span class="excerpt-reference">${excerpt.expectedReference}</span>
@@ -352,37 +329,95 @@ function renderExcerpts() {
     button.addEventListener("click", () => void runExcerpt(excerpt));
     elements.excerptList.append(button);
   });
+  elements.testNote.textContent = language === "ru"
+    ? "Direct runs the parser. Speaker also plays the original sermon excerpt."
+    : "Direct runs five English parser cases. Speaker reads each case aloud.";
+  updateControls();
 }
 
-function configureInstall() {
+function setLanguage(next) {
+  if (next === language || wantsListening || activeTestId) return;
+  language = next;
+  localStorage.setItem("verse-language", language);
+  detector.setLanguage(language);
+  recognition = null;
+  resetSessionView();
+  for (const button of elements.languageButtons) {
+    const active = button.dataset.language === language;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+  setMessage(LANGUAGE[language].ready);
+  renderExcerpts();
+}
+
+function toggleFolder(section, content, button) {
+  const open = content.hidden;
+  content.hidden = !open;
+  section.classList.toggle("open", open);
+  button.setAttribute("aria-expanded", String(open));
+}
+
+async function createFeedbackReport({ kind, expected, caught, note, requestedAudioSeconds }) {
+  const actualAudioSeconds = Math.min(requestedAudioSeconds, rollingAudio.availableSeconds);
+  const id = crypto.randomUUID ? crypto.randomUUID() : `report-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return {
+    id,
+    schemaVersion: 1,
+    appVersion: APP_VERSION,
+    createdAt: new Date().toISOString(),
+    pageUrl: location.href,
+    language,
+    kind,
+    expected,
+    caught,
+    note,
+    requestedAudioSeconds,
+    actualAudioSeconds,
+    context: detector.readContext(),
+    latestReference: latestDetected,
+    transcripts: transcriptHistory,
+    browser: navigator.userAgent,
+    audioBlob: rollingAudio.createWav(requestedAudioSeconds),
+  };
+}
+
+function configureMoreMenu() {
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-  if (isStandalone) elements.installButton.hidden = true;
   elements.installInstructions.textContent = isIOS
-    ? "In Safari, tap Share, then Add to Home Screen. The installed app opens full screen."
-    : "Install this listener for a full-screen app, or download its files below.";
-
+    ? "In Safari, tap Share, then Add to Home Screen. The installed app follows website updates."
+    : "Install this listener as a full-screen browser app. It follows website updates.";
+  if (isStandalone) elements.nativeInstallButton.hidden = true;
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     installPrompt = event;
     elements.nativeInstallButton.hidden = false;
   });
-
-  elements.installButton.addEventListener("click", () => elements.installDialog.showModal());
-  elements.closeInstallButton.addEventListener("click", () => elements.installDialog.close());
   elements.nativeInstallButton.addEventListener("click", async () => {
     if (!installPrompt) return;
     await installPrompt.prompt();
     installPrompt = null;
     elements.nativeInstallButton.hidden = true;
-    elements.installDialog.close();
+  });
+  elements.downloadSourceButton.addEventListener("click", async () => {
+    elements.downloadSourceButton.disabled = true;
+    try {
+      await downloadCurrentSourceContext((index, total, path) => {
+        elements.sourceDownloadStatus.textContent = `Fetching ${index}/${total} · ${path}`;
+      });
+      elements.sourceDownloadStatus.textContent = "Current GitHub source context downloaded.";
+    } catch {
+      elements.sourceDownloadStatus.textContent = "Could not reach GitHub. Check the connection and try again.";
+    } finally {
+      elements.downloadSourceButton.disabled = false;
+    }
   });
 }
 
 function configureTheme() {
   const stored = localStorage.getItem("verse-theme");
-  const initial = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  document.documentElement.dataset.theme = initial;
+  document.documentElement.dataset.theme = stored || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   elements.themeButton.addEventListener("click", () => {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
@@ -390,15 +425,23 @@ function configureTheme() {
   });
 }
 
-elements.startButton.addEventListener("click", () => void startListening());
-elements.stopButton.addEventListener("click", () => void stopListening());
-elements.folderButton.addEventListener("click", () => {
-  const open = elements.folderContent.hidden;
-  elements.folderContent.hidden = !open;
-  elements.excerptFolder.classList.toggle("open", open);
-  elements.folderButton.setAttribute("aria-expanded", String(open));
+const feedbackUI = configureFeedbackUI({
+  elements,
+  createReport: createFeedbackReport,
+  readPreview: () => ({
+    caught: latestDetected?.canonical ?? "",
+    transcript: transcriptHistory.map((entry) => entry.text).join("\n"),
+    audioSeconds: rollingAudio.availableSeconds,
+  }),
 });
 
+elements.startButton.addEventListener("click", () => void startListening());
+elements.stopButton.addEventListener("click", () => void stopListening());
+elements.folderButton.addEventListener("click", () => toggleFolder(elements.excerptFolder, elements.folderContent, elements.folderButton));
+elements.reportsFolderButton.addEventListener("click", () => toggleFolder(elements.reportsFolder, elements.reportsFolderContent, elements.reportsFolderButton));
+elements.moreButton.addEventListener("click", () => elements.moreDialog.showModal());
+elements.closeMoreButton.addEventListener("click", () => elements.moreDialog.close());
+for (const button of elements.languageButtons) button.addEventListener("click", () => setLanguage(button.dataset.language));
 for (const button of elements.modeButtons) {
   button.addEventListener("click", () => {
     playbackMode = button.dataset.mode;
@@ -417,17 +460,23 @@ document.addEventListener("visibilitychange", () => {
     startRecognition();
   }
 });
-
 window.addEventListener("pagehide", () => {
   clearTimeout(restartTimer);
   if (recognitionRunning) recognition.abort();
+  void rollingAudio.stop({ keepAudio: false });
 });
 
 configureTheme();
-configureInstall();
+configureMoreMenu();
+for (const button of elements.languageButtons) {
+  const active = button.dataset.language === language;
+  button.classList.toggle("active", active);
+  button.setAttribute("aria-pressed", String(active));
+}
+setMessage(LANGUAGE[language].ready);
 renderExcerpts();
-updateControls();
+void feedbackUI.refresh();
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=3").catch(() => {}));
 }

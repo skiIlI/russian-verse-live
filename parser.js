@@ -1,162 +1,227 @@
-const CONTEXT_TTL_MS = 6 * 60 * 60 * 1e3;
-const DUPLICATE_TTL_MS = 20 * 1e3;
-const BOOKS = [
-  { id: "genesis", book: "\u0411\u044B\u0442\u0438\u0435", canonicalBook: "Genesis", aliases: ["\u0431\u044B\u0442\u0438\u0435", "\u0431\u044B\u0442\u0438\u044F", "\u0431\u0442\u0435"] },
-  { id: "exodus", book: "\u0418\u0441\u0445\u043E\u0434", canonicalBook: "Exodus", aliases: ["\u0438\u0441\u0445\u043E\u0434"] },
-  { id: "leviticus", book: "\u041B\u0435\u0432\u0438\u0442", canonicalBook: "Leviticus", aliases: ["\u043B\u0435\u0432\u0438\u0442", "\u043B\u0435\u0432\u0438\u0442\u0430"] },
-  { id: "numbers", book: "\u0427\u0438\u0441\u043B\u0430", canonicalBook: "Numbers", aliases: ["\u0447\u0438\u0441\u043B\u0430", "\u0447\u0438\u0441\u0435\u043B"] },
-  { id: "deuteronomy", book: "\u0412\u0442\u043E\u0440\u043E\u0437\u0430\u043A\u043E\u043D\u0438\u0435", canonicalBook: "Deuteronomy", aliases: ["\u0432\u0442\u043E\u0440\u043E\u0437\u0430\u043A\u043E\u043D\u0438\u0435", "\u0432\u0442\u043E\u0440\u043E\u0437\u0430\u043A\u043E\u043D\u0438\u044F"] },
-  { id: "joshua", book: "\u0418\u0438\u0441\u0443\u0441 \u041D\u0430\u0432\u0438\u043D", canonicalBook: "Joshua", aliases: ["\u0438\u0438\u0441\u0443\u0441\u0430 \u043D\u0430\u0432\u0438\u043D\u0430", "\u0438\u0438\u0441\u0443\u0441 \u043D\u0430\u0432\u0438\u043D", "\u043D\u0430\u0432\u0438\u043D\u0430"] },
-  { id: "judges", book: "\u0421\u0443\u0434\u044C\u0438", canonicalBook: "Judges", aliases: ["\u043A\u043D\u0438\u0433\u0430 \u0441\u0443\u0434\u0435\u0439", "\u0441\u0443\u0434\u0435\u0439", "\u0441\u0443\u0434\u044C\u0438"] },
-  { id: "ruth", book: "\u0420\u0443\u0444\u044C", canonicalBook: "Ruth", aliases: ["\u0440\u0443\u0444\u044C", "\u0440\u0443\u0444\u0438"] },
-  { id: "1-samuel", book: "1 \u0426\u0430\u0440\u0441\u0442\u0432", canonicalBook: "1 Samuel", aliases: ["\u043F\u0435\u0440\u0432\u0430\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "\u043F\u0435\u0440\u0432\u043E\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "1 \u0446\u0430\u0440\u0441\u0442\u0432"] },
-  { id: "2-samuel", book: "2 \u0426\u0430\u0440\u0441\u0442\u0432", canonicalBook: "2 Samuel", aliases: ["\u0432\u0442\u043E\u0440\u0430\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "\u0432\u0442\u043E\u0440\u043E\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "2 \u0446\u0430\u0440\u0441\u0442\u0432"] },
-  { id: "1-kings", book: "3 \u0426\u0430\u0440\u0441\u0442\u0432", canonicalBook: "1 Kings", aliases: ["\u0442\u0440\u0435\u0442\u044C\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "\u0442\u0440\u0435\u0442\u044C\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "3 \u0446\u0430\u0440\u0441\u0442\u0432"] },
-  { id: "2-kings", book: "4 \u0426\u0430\u0440\u0441\u0442\u0432", canonicalBook: "2 Kings", aliases: ["\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u0430\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "4 \u0446\u0430\u0440\u0441\u0442\u0432"] },
-  { id: "job", book: "\u0418\u043E\u0432", canonicalBook: "Job", aliases: ["\u0438\u043E\u0432\u0430", "\u0438\u043E\u0432"] },
-  { id: "psalms", book: "\u041F\u0441\u0430\u043B\u043E\u043C", canonicalBook: "Psalms", aliases: ["\u043F\u0441\u0430\u043B\u0442\u0438\u0440\u044C", "\u043F\u0441\u0430\u043B\u0442\u044B\u0440\u044C", "\u043F\u0441\u0430\u043B\u043E\u043C", "\u043F\u0441\u0430\u043B\u043C\u0430", "\u043F\u0441\u0430\u043B\u043C\u0435", "\u043F\u0441\u0430\u043B\u043C\u044B", "\u043F\u0441\u0430\u043B\u043C\u043E\u0432", "\u043F\u0441\u0430\u043B\u043C\u0430\u0445"] },
-  { id: "proverbs", book: "\u041F\u0440\u0438\u0442\u0447\u0438", canonicalBook: "Proverbs", aliases: ["\u043F\u0440\u0438\u0442\u0447\u0438", "\u043F\u0440\u0438\u0442\u0447\u0435\u0439"] },
-  { id: "ecclesiastes", book: "\u0415\u043A\u043A\u043B\u0435\u0441\u0438\u0430\u0441\u0442", canonicalBook: "Ecclesiastes", aliases: ["\u0435\u043A\u043A\u043B\u0435\u0441\u0438\u0430\u0441\u0442\u0430", "\u0435\u043A\u043A\u043B\u0435\u0441\u0438\u0430\u0441\u0442", "\u044D\u043A\u043A\u043B\u0435\u0437\u0438\u0430\u0441\u0442"] },
-  { id: "song", book: "\u041F\u0435\u0441\u043D\u044C \u041F\u0435\u0441\u043D\u0435\u0439", canonicalBook: "Song of Solomon", aliases: ["\u043F\u0435\u0441\u043D\u044C \u043F\u0435\u0441\u043D\u0435\u0439", "\u043F\u0435\u0441\u043D\u0438 \u043F\u0435\u0441\u043D\u0435\u0439"] },
-  { id: "isaiah", book: "\u0418\u0441\u0430\u0438\u044F", canonicalBook: "Isaiah", aliases: ["\u0438\u0441\u0430\u0438\u0438", "\u0438\u0441\u0430\u0439\u044F", "\u0438\u0441\u0430\u0438\u044F"] },
-  { id: "jeremiah", book: "\u0418\u0435\u0440\u0435\u043C\u0438\u044F", canonicalBook: "Jeremiah", aliases: ["\u0438\u0435\u0440\u0435\u043C\u0438\u0438", "\u0438\u0435\u0440\u0435\u043C\u0438\u044F"] },
-  { id: "lamentations", book: "\u041F\u043B\u0430\u0447 \u0418\u0435\u0440\u0435\u043C\u0438\u0438", canonicalBook: "Lamentations", aliases: ["\u043F\u043B\u0430\u0447 \u0438\u0435\u0440\u0435\u043C\u0438\u0438"] },
-  { id: "ezekiel", book: "\u0418\u0435\u0437\u0435\u043A\u0438\u0438\u043B\u044C", canonicalBook: "Ezekiel", aliases: ["\u0438\u0435\u0437\u0435\u043A\u0438\u0438\u043B\u044F", "\u0438\u0435\u0437\u0435\u043A\u0438\u0438\u043B\u044C"] },
-  { id: "daniel", book: "\u0414\u0430\u043D\u0438\u0438\u043B", canonicalBook: "Daniel", aliases: ["\u0434\u0430\u043D\u0438\u0438\u043B\u0430", "\u0434\u0430\u043D\u0438\u0438\u043B"] },
-  { id: "hosea", book: "\u041E\u0441\u0438\u044F", canonicalBook: "Hosea", aliases: ["\u043E\u0441\u0438\u0438", "\u043E\u0441\u0438\u044F"] },
-  { id: "joel", book: "\u0418\u043E\u0438\u043B\u044C", canonicalBook: "Joel", aliases: ["\u0438\u043E\u0438\u043B\u044F", "\u0438\u043E\u0438\u043B\u044C"] },
-  { id: "amos", book: "\u0410\u043C\u043E\u0441", canonicalBook: "Amos", aliases: ["\u0430\u043C\u043E\u0441\u0430", "\u0430\u043C\u043E\u0441"] },
-  { id: "jonah", book: "\u0418\u043E\u043D\u0430", canonicalBook: "Jonah", aliases: ["\u0438\u043E\u043D\u044B", "\u0438\u043E\u043D\u0430"] },
-  { id: "micah", book: "\u041C\u0438\u0445\u0435\u0439", canonicalBook: "Micah", aliases: ["\u043C\u0438\u0445\u0435\u044F", "\u043C\u0438\u0445\u0435\u0439"] },
-  { id: "habakkuk", book: "\u0410\u0432\u0432\u0430\u043A\u0443\u043C", canonicalBook: "Habakkuk", aliases: ["\u0430\u0432\u0432\u0430\u043A\u0443\u043C\u0430", "\u0430\u0432\u0432\u0430\u043A\u0443\u043C"] },
-  { id: "zechariah", book: "\u0417\u0430\u0445\u0430\u0440\u0438\u044F", canonicalBook: "Zechariah", aliases: ["\u0437\u0430\u0445\u0430\u0440\u0438\u0438", "\u0437\u0430\u0445\u0430\u0440\u0438\u044F"] },
-  { id: "malachi", book: "\u041C\u0430\u043B\u0430\u0445\u0438\u044F", canonicalBook: "Malachi", aliases: ["\u043C\u0430\u043B\u0430\u0445\u0438\u0438", "\u043C\u0430\u043B\u0430\u0445\u0438\u044F"], verseOnlyChapter: 4 },
-  { id: "matthew", book: "\u041E\u0442 \u041C\u0430\u0442\u0444\u0435\u044F", canonicalBook: "Matthew", aliases: ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0442\u0444\u0435\u044F", "\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0442\u0432\u0435\u044F", "\u043E\u0442 \u043C\u0430\u0442\u0444\u0435\u044F", "\u043E\u0442 \u043C\u0430\u0442\u0432\u0435\u044F", "\u043C\u0430\u0442\u0444\u0435\u044F", "\u043C\u0430\u0442\u0444\u0435\u044E", "\u043C\u0430\u0442\u0444\u0435\u0439", "\u043C\u0430\u0442\u0432\u0435\u044F", "\u043C\u0430\u0442\u0432\u0435\u044E", "\u043C\u0430\u0442\u0432\u0435\u0439", "\u043C\u0430\u0442\u0435\u044F"] },
-  { id: "mark", book: "\u041E\u0442 \u041C\u0430\u0440\u043A\u0430", canonicalBook: "Mark", aliases: ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0440\u043A\u0430", "\u043E\u0442 \u043C\u0430\u0440\u043A\u0430", "\u043C\u0430\u0440\u043A\u0430", "\u043C\u0430\u0440\u043A"] },
-  { id: "luke", book: "\u041E\u0442 \u041B\u0443\u043A\u0438", canonicalBook: "Luke", aliases: ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043B\u0443\u043A\u0438", "\u043E\u0442 \u043B\u0443\u043A\u0438", "\u043B\u0443\u043A\u043E\u0439", "\u043B\u0443\u043A\u0438", "\u043B\u0443\u043A\u0430"] },
-  { id: "john", book: "\u041E\u0442 \u0418\u043E\u0430\u043D\u043D\u0430", canonicalBook: "John", aliases: ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u0438\u043E\u0430\u043D\u043D\u0430", "\u043E\u0442 \u0438\u043E\u0430\u043D\u043D\u0430", "\u0438\u043E\u0430\u043D\u043D\u0430", "\u0438\u043E\u0430\u043D\u043D"] },
-  { id: "acts", book: "\u0414\u0435\u044F\u043D\u0438\u044F", canonicalBook: "Acts", aliases: ["\u0434\u0435\u044F\u043D\u0438\u044F \u0430\u043F\u043E\u0441\u0442\u043E\u043B\u043E\u0432", "\u0434\u0435\u044F\u043D\u0438\u0439", "\u0434\u0435\u044F\u043D\u0438\u044F"] },
-  { id: "romans", book: "\u041A \u0420\u0438\u043C\u043B\u044F\u043D\u0430\u043C", canonicalBook: "Romans", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0440\u0438\u043C\u043B\u044F\u043D\u0430\u043C", "\u043A \u0440\u0438\u043C\u043B\u044F\u043D\u0430\u043C", "\u0440\u0438\u043C\u043B\u044F\u043D\u0430\u043C"] },
-  { id: "1-corinthians", book: "1 \u041A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", canonicalBook: "1 Corinthians", aliases: ["\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u043F\u0435\u0440\u0432\u043E\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u043F\u0435\u0440\u0432\u0430\u044F \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u043F\u0435\u0440\u0432\u044B\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u043F\u0435\u0440\u0432\u043E\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u0438\u0430\u043D\u043E\u043C", "\u043F\u0435\u0440\u0432\u043E\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u0438\u0430\u043D\u0430\u043C", "1 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C"] },
-  { id: "2-corinthians", book: "2 \u041A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", canonicalBook: "2 Corinthians", aliases: ["\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u0432\u0442\u043E\u0440\u043E\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u0432\u0442\u043E\u0440\u0430\u044F \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "2 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C"] },
-  { id: "galatians", book: "\u041A \u0413\u0430\u043B\u0430\u0442\u0430\u043C", canonicalBook: "Galatians", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0433\u0430\u043B\u0430\u0442\u0430\u043C", "\u043A \u0433\u0430\u043B\u0430\u0442\u0430\u043C", "\u0433\u0430\u043B\u0430\u0442\u0430\u043C"] },
-  { id: "ephesians", book: "\u041A \u0415\u0444\u0435\u0441\u044F\u043D\u0430\u043C", canonicalBook: "Ephesians", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0435\u0444\u0435\u0441\u044F\u043D\u0430\u043C", "\u043A \u0435\u0444\u0435\u0441\u044F\u043D\u0430\u043C", "\u0435\u0444\u0435\u0441\u044F\u043D\u0430\u043C"] },
-  { id: "philippians", book: "\u041A \u0424\u0438\u043B\u0438\u043F\u043F\u0438\u0439\u0446\u0430\u043C", canonicalBook: "Philippians", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0444\u0438\u043B\u0438\u043F\u043F\u0438\u0439\u0446\u0430\u043C", "\u043A \u0444\u0438\u043B\u0438\u043F\u043F\u0438\u0439\u0446\u0430\u043C", "\u0444\u0438\u043B\u0438\u043F\u043F\u0438\u0439\u0446\u0430\u043C"] },
-  { id: "colossians", book: "\u041A \u041A\u043E\u043B\u043E\u0441\u0441\u044F\u043D\u0430\u043C", canonicalBook: "Colossians", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u043A\u043E\u043B\u043E\u0441\u0441\u044F\u043D\u0430\u043C", "\u043A \u043A\u043E\u043B\u043E\u0441\u0441\u044F\u043D\u0430\u043C", "\u043A\u043E\u043B\u043E\u0441\u0441\u044F\u043D\u0430\u043C"] },
-  { id: "1-thessalonians", book: "1 \u0424\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", canonicalBook: "1 Thessalonians", aliases: ["\u043F\u0435\u0440\u0432\u043E\u0435 \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", "1 \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C"] },
-  { id: "2-thessalonians", book: "2 \u0424\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", canonicalBook: "2 Thessalonians", aliases: ["\u0432\u0442\u043E\u0440\u043E\u0435 \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", "2 \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C"] },
-  { id: "1-timothy", book: "1 \u0422\u0438\u043C\u043E\u0444\u0435\u044E", canonicalBook: "1 Timothy", aliases: ["\u043F\u0435\u0440\u0432\u043E\u0435 \u0442\u0438\u043C\u043E\u0444\u0435\u044E", "1 \u0442\u0438\u043C\u043E\u0444\u0435\u044E"] },
-  { id: "2-timothy", book: "2 \u0422\u0438\u043C\u043E\u0444\u0435\u044E", canonicalBook: "2 Timothy", aliases: ["\u0432\u0442\u043E\u0440\u043E\u0435 \u0442\u0438\u043C\u043E\u0444\u0435\u044E", "2 \u0442\u0438\u043C\u043E\u0444\u0435\u044E"] },
-  { id: "titus", book: "\u041A \u0422\u0438\u0442\u0443", canonicalBook: "Titus", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0442\u0438\u0442\u0443", "\u043A \u0442\u0438\u0442\u0443", "\u0442\u0438\u0442\u0443"] },
-  { id: "philemon", book: "\u041A \u0424\u0438\u043B\u0438\u043C\u043E\u043D\u0443", canonicalBook: "Philemon", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0444\u0438\u043B\u0438\u043C\u043E\u043D\u0443", "\u043A \u0444\u0438\u043B\u0438\u043C\u043E\u043D\u0443", "\u0444\u0438\u043B\u0438\u043C\u043E\u043D\u0443"] },
-  { id: "hebrews", book: "\u041A \u0415\u0432\u0440\u0435\u044F\u043C", canonicalBook: "Hebrews", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0435\u0432\u0440\u0435\u044F\u043C", "\u043A \u0435\u0432\u0440\u0435\u044F\u043C", "\u0435\u0432\u0440\u0435\u044F\u043C"] },
-  { id: "james", book: "\u0418\u0430\u043A\u043E\u0432\u0430", canonicalBook: "James", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u0430\u043A\u043E\u0432\u0430", "\u0438\u0430\u043A\u043E\u0432\u0430", "\u0438\u0430\u043A\u043E\u0432"] },
-  { id: "1-peter", book: "1 \u041F\u0435\u0442\u0440\u0430", canonicalBook: "1 Peter", aliases: ["\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043F\u0435\u0442\u0440\u0430", "\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u0435\u0442\u0440\u0430", "1 \u043F\u0435\u0442\u0440\u0430"] },
-  { id: "2-peter", book: "2 \u041F\u0435\u0442\u0440\u0430", canonicalBook: "2 Peter", aliases: ["\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043F\u0435\u0442\u0440\u0430", "\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u0435\u0442\u0440\u0430", "2 \u043F\u0435\u0442\u0440\u0430"] },
-  { id: "1-john", book: "1 \u0418\u043E\u0430\u043D\u043D\u0430", canonicalBook: "1 John", aliases: ["\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "\u043F\u0435\u0440\u0432\u043E\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "1 \u0438\u043E\u0430\u043D\u043D\u0430"] },
-  { id: "2-john", book: "2 \u0418\u043E\u0430\u043D\u043D\u0430", canonicalBook: "2 John", aliases: ["\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "\u0432\u0442\u043E\u0440\u043E\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "2 \u0438\u043E\u0430\u043D\u043D\u0430"] },
-  { id: "3-john", book: "3 \u0418\u043E\u0430\u043D\u043D\u0430", canonicalBook: "3 John", aliases: ["\u0442\u0440\u0435\u0442\u044C\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "\u0442\u0440\u0435\u0442\u044C\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "3 \u0438\u043E\u0430\u043D\u043D\u0430"] },
-  { id: "jude", book: "\u0418\u0443\u0434\u044B", canonicalBook: "Jude", aliases: ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u0443\u0434\u044B", "\u0438\u0443\u0434\u044B", "\u0438\u0443\u0434\u0430"] },
-  { id: "revelation", book: "\u041E\u0442\u043A\u0440\u043E\u0432\u0435\u043D\u0438\u0435", canonicalBook: "Revelation", aliases: ["\u043E\u0442\u043A\u0440\u043E\u0432\u0435\u043D\u0438\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "\u0430\u043F\u043E\u043A\u0430\u043B\u0438\u043F\u0441\u0438\u0441", "\u043E\u0442\u043A\u0440\u043E\u0432\u0435\u043D\u0438\u044F", "\u043E\u0442\u043A\u0440\u043E\u0432\u0435\u043D\u0438\u0435"] }
+// src/bookDefinitions.ts
+var book = (id, canonicalBook, chapters, ruName, ruAliases, enAliases, fallbackChapterOnVerse) => ({
+  id,
+  canonicalBook,
+  chapters,
+  names: { ru: ruName, en: canonicalBook },
+  aliases: { ru: ruAliases, en: enAliases },
+  fallbackChapterOnVerse
+});
+var BOOKS = [
+  book("genesis", "Genesis", 50, "\u0411\u044B\u0442\u0438\u0435", ["\u043A\u043D\u0438\u0433\u0430 \u0431\u044B\u0442\u0438\u0435", "\u0431\u044B\u0442\u0438\u0435", "\u0431\u044B\u0442\u0438\u044F", "\u0431\u0442\u0435"], ["book of genesis", "genesis", "gen"]),
+  book("exodus", "Exodus", 40, "\u0418\u0441\u0445\u043E\u0434", ["\u043A\u043D\u0438\u0433\u0430 \u0438\u0441\u0445\u043E\u0434", "\u0438\u0441\u0445\u043E\u0434"], ["book of exodus", "exodus", "exod"]),
+  book("leviticus", "Leviticus", 27, "\u041B\u0435\u0432\u0438\u0442", ["\u043A\u043D\u0438\u0433\u0430 \u043B\u0435\u0432\u0438\u0442", "\u043B\u0435\u0432\u0438\u0442\u0430", "\u043B\u0435\u0432\u0438\u0442"], ["leviticus", "lev"]),
+  book("numbers", "Numbers", 36, "\u0427\u0438\u0441\u043B\u0430", ["\u043A\u043D\u0438\u0433\u0430 \u0447\u0438\u0441\u0435\u043B", "\u0447\u0438\u0441\u0435\u043B", "\u0447\u0438\u0441\u043B\u0430"], ["book of numbers", "numbers", "num"]),
+  book("deuteronomy", "Deuteronomy", 34, "\u0412\u0442\u043E\u0440\u043E\u0437\u0430\u043A\u043E\u043D\u0438\u0435", ["\u0432\u0442\u043E\u0440\u043E\u0437\u0430\u043A\u043E\u043D\u0438\u044F", "\u0432\u0442\u043E\u0440\u043E\u0437\u0430\u043A\u043E\u043D\u0438\u0435"], ["deuteronomy", "deut"]),
+  book("joshua", "Joshua", 24, "\u0418\u0438\u0441\u0443\u0441 \u041D\u0430\u0432\u0438\u043D", ["\u043A\u043D\u0438\u0433\u0430 \u0438\u0438\u0441\u0443\u0441\u0430 \u043D\u0430\u0432\u0438\u043D\u0430", "\u0438\u0438\u0441\u0443\u0441\u0430 \u043D\u0430\u0432\u0438\u043D\u0430", "\u0438\u0438\u0441\u0443\u0441 \u043D\u0430\u0432\u0438\u043D", "\u043D\u0430\u0432\u0438\u043D\u0430"], ["book of joshua", "joshua", "josh"]),
+  book("judges", "Judges", 21, "\u0421\u0443\u0434\u044C\u0438", ["\u043A\u043D\u0438\u0433\u0430 \u0441\u0443\u0434\u0435\u0439", "\u0441\u0443\u0434\u0435\u0439", "\u0441\u0443\u0434\u044C\u0438"], ["book of judges", "judges", "judg"]),
+  book("ruth", "Ruth", 4, "\u0420\u0443\u0444\u044C", ["\u043A\u043D\u0438\u0433\u0430 \u0440\u0443\u0444\u044C", "\u0440\u0443\u0444\u0438", "\u0440\u0443\u0444\u044C"], ["book of ruth", "ruth"]),
+  book("1-samuel", "1 Samuel", 31, "1 \u0426\u0430\u0440\u0441\u0442\u0432", ["\u043F\u0435\u0440\u0432\u0430\u044F \u043A\u043D\u0438\u0433\u0430 \u0446\u0430\u0440\u0441\u0442\u0432", "\u043F\u0435\u0440\u0432\u043E\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "\u043F\u0435\u0440\u0432\u0430\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "1 \u0446\u0430\u0440\u0441\u0442\u0432"], ["first samuel", "1st samuel", "1 samuel"]),
+  book("2-samuel", "2 Samuel", 24, "2 \u0426\u0430\u0440\u0441\u0442\u0432", ["\u0432\u0442\u043E\u0440\u0430\u044F \u043A\u043D\u0438\u0433\u0430 \u0446\u0430\u0440\u0441\u0442\u0432", "\u0432\u0442\u043E\u0440\u043E\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "\u0432\u0442\u043E\u0440\u0430\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "2 \u0446\u0430\u0440\u0441\u0442\u0432"], ["second samuel", "2nd samuel", "2 samuel"]),
+  book("1-kings", "1 Kings", 22, "3 \u0426\u0430\u0440\u0441\u0442\u0432", ["\u0442\u0440\u0435\u0442\u044C\u044F \u043A\u043D\u0438\u0433\u0430 \u0446\u0430\u0440\u0441\u0442\u0432", "\u0442\u0440\u0435\u0442\u044C\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "\u0442\u0440\u0435\u0442\u044C\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "3 \u0446\u0430\u0440\u0441\u0442\u0432"], ["first kings", "1st kings", "1 kings"]),
+  book("2-kings", "2 Kings", 25, "4 \u0426\u0430\u0440\u0441\u0442\u0432", ["\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u0430\u044F \u043A\u043D\u0438\u0433\u0430 \u0446\u0430\u0440\u0441\u0442\u0432", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u0430\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "4 \u0446\u0430\u0440\u0441\u0442\u0432"], ["second kings", "2nd kings", "2 kings"]),
+  book("1-chronicles", "1 Chronicles", 29, "1 \u041F\u0430\u0440\u0430\u043B\u0438\u043F\u043E\u043C\u0435\u043D\u043E\u043D", ["\u043F\u0435\u0440\u0432\u0430\u044F \u043F\u0430\u0440\u0430\u043B\u0438\u043F\u043E\u043C\u0435\u043D\u043E\u043D", "\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u0430\u0440\u0430\u043B\u0438\u043F\u043E\u043C\u0435\u043D\u043E\u043D", "1 \u043F\u0430\u0440\u0430\u043B\u0438\u043F\u043E\u043C\u0435\u043D\u043E\u043D"], ["first chronicles", "1st chronicles", "1 chronicles"]),
+  book("2-chronicles", "2 Chronicles", 36, "2 \u041F\u0430\u0440\u0430\u043B\u0438\u043F\u043E\u043C\u0435\u043D\u043E\u043D", ["\u0432\u0442\u043E\u0440\u0430\u044F \u043F\u0430\u0440\u0430\u043B\u0438\u043F\u043E\u043C\u0435\u043D\u043E\u043D", "\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u0430\u0440\u0430\u043B\u0438\u043F\u043E\u043C\u0435\u043D\u043E\u043D", "2 \u043F\u0430\u0440\u0430\u043B\u0438\u043F\u043E\u043C\u0435\u043D\u043E\u043D"], ["second chronicles", "2nd chronicles", "2 chronicles"]),
+  book("ezra", "Ezra", 10, "\u0415\u0437\u0434\u0440\u0430", ["\u043A\u043D\u0438\u0433\u0430 \u0435\u0437\u0434\u0440\u044B", "\u0435\u0437\u0434\u0440\u044B", "\u0435\u0437\u0434\u0440\u0430"], ["book of ezra", "ezra"]),
+  book("nehemiah", "Nehemiah", 13, "\u041D\u0435\u0435\u043C\u0438\u044F", ["\u043A\u043D\u0438\u0433\u0430 \u043D\u0435\u0435\u043C\u0438\u0438", "\u043D\u0435\u0435\u043C\u0438\u0438", "\u043D\u0435\u0435\u043C\u0438\u044F"], ["book of nehemiah", "nehemiah", "neh"]),
+  book("esther", "Esther", 10, "\u0415\u0441\u0444\u0438\u0440\u044C", ["\u043A\u043D\u0438\u0433\u0430 \u0435\u0441\u0444\u0438\u0440\u044C", "\u0435\u0441\u0444\u0438\u0440\u0438", "\u0435\u0441\u0444\u0438\u0440\u044C"], ["book of esther", "esther", "est"]),
+  book("job", "Job", 42, "\u0418\u043E\u0432", ["\u043A\u043D\u0438\u0433\u0430 \u0438\u043E\u0432\u0430", "\u0438\u043E\u0432\u0430", "\u0438\u043E\u0432"], ["book of job", "job"]),
+  book("psalms", "Psalms", 150, "\u041F\u0441\u0430\u043B\u043E\u043C", ["\u043A\u043D\u0438\u0433\u0430 \u043F\u0441\u0430\u043B\u043C\u043E\u0432", "\u043F\u0441\u0430\u043B\u0442\u0438\u0440\u044C", "\u043F\u0441\u0430\u043B\u0442\u044B\u0440\u044C", "\u043F\u0441\u0430\u043B\u043C\u0430\u0445", "\u043F\u0441\u0430\u043B\u043C\u043E\u0432", "\u043F\u0441\u0430\u043B\u043C\u044B", "\u043F\u0441\u0430\u043B\u043E\u043C", "\u043F\u0441\u0430\u043B\u043C\u0430", "\u043F\u0441\u0430\u043B\u043C\u0435"], ["book of psalms", "the psalms", "psalms", "psalm"]),
+  book("proverbs", "Proverbs", 31, "\u041F\u0440\u0438\u0442\u0447\u0438", ["\u043A\u043D\u0438\u0433\u0430 \u043F\u0440\u0438\u0442\u0447\u0435\u0439", "\u043F\u0440\u0438\u0442\u0447\u0435\u0439", "\u043F\u0440\u0438\u0442\u0447\u0438"], ["book of proverbs", "proverbs", "prov"]),
+  book("ecclesiastes", "Ecclesiastes", 12, "\u0415\u043A\u043A\u043B\u0435\u0441\u0438\u0430\u0441\u0442", ["\u0435\u043A\u043A\u043B\u0435\u0441\u0438\u0430\u0441\u0442\u0430", "\u0435\u043A\u043A\u043B\u0435\u0441\u0438\u0430\u0441\u0442", "\u044D\u043A\u043A\u043B\u0435\u0437\u0438\u0430\u0441\u0442"], ["ecclesiastes", "eccles"]),
+  book("song", "Song of Solomon", 8, "\u041F\u0435\u0441\u043D\u044C \u041F\u0435\u0441\u043D\u0435\u0439", ["\u043F\u0435\u0441\u043D\u044F \u043F\u0435\u0441\u043D\u0435\u0439", "\u043F\u0435\u0441\u043D\u0438 \u043F\u0435\u0441\u043D\u0435\u0439", "\u043F\u0435\u0441\u043D\u044C \u043F\u0435\u0441\u043D\u0435\u0439"], ["song of solomon", "song of songs", "songs"]),
+  book("isaiah", "Isaiah", 66, "\u0418\u0441\u0430\u0438\u044F", ["\u043A\u043D\u0438\u0433\u0430 \u0438\u0441\u0430\u0438\u0438", "\u0438\u0441\u0430\u0438\u0438", "\u0438\u0441\u0430\u0439\u044F", "\u0438\u0441\u0430\u0438\u044F"], ["book of isaiah", "isaiah", "isa"]),
+  book("jeremiah", "Jeremiah", 52, "\u0418\u0435\u0440\u0435\u043C\u0438\u044F", ["\u043A\u043D\u0438\u0433\u0430 \u0438\u0435\u0440\u0435\u043C\u0438\u0438", "\u0438\u0435\u0440\u0435\u043C\u0438\u0438", "\u0438\u0435\u0440\u0435\u043C\u0438\u044F"], ["book of jeremiah", "jeremiah", "jer"]),
+  book("lamentations", "Lamentations", 5, "\u041F\u043B\u0430\u0447 \u0418\u0435\u0440\u0435\u043C\u0438\u0438", ["\u043A\u043D\u0438\u0433\u0430 \u043F\u043B\u0430\u0447 \u0438\u0435\u0440\u0435\u043C\u0438\u0438", "\u043F\u043B\u0430\u0447 \u0438\u0435\u0440\u0435\u043C\u0438\u0438"], ["lamentations of jeremiah", "lamentations", "lam"]),
+  book("ezekiel", "Ezekiel", 48, "\u0418\u0435\u0437\u0435\u043A\u0438\u0438\u043B\u044C", ["\u043A\u043D\u0438\u0433\u0430 \u0438\u0435\u0437\u0435\u043A\u0438\u0438\u043B\u044F", "\u0438\u0435\u0437\u0435\u043A\u0438\u0438\u043B\u044F", "\u0438\u0435\u0437\u0435\u043A\u0438\u0438\u043B\u044C"], ["book of ezekiel", "ezekiel", "ezek"]),
+  book("daniel", "Daniel", 12, "\u0414\u0430\u043D\u0438\u0438\u043B", ["\u043A\u043D\u0438\u0433\u0430 \u0434\u0430\u043D\u0438\u0438\u043B\u0430", "\u0434\u0430\u043D\u0438\u0438\u043B\u0430", "\u0434\u0430\u043D\u0438\u0438\u043B"], ["book of daniel", "daniel", "dan"]),
+  book("hosea", "Hosea", 14, "\u041E\u0441\u0438\u044F", ["\u043A\u043D\u0438\u0433\u0430 \u043E\u0441\u0438\u0438", "\u043E\u0441\u0438\u0438", "\u043E\u0441\u0438\u044F"], ["book of hosea", "hosea", "hos"]),
+  book("joel", "Joel", 3, "\u0418\u043E\u0438\u043B\u044C", ["\u043A\u043D\u0438\u0433\u0430 \u0438\u043E\u0438\u043B\u044F", "\u0438\u043E\u0438\u043B\u044F", "\u0438\u043E\u0438\u043B\u044C"], ["book of joel", "joel"]),
+  book("amos", "Amos", 9, "\u0410\u043C\u043E\u0441", ["\u043A\u043D\u0438\u0433\u0430 \u0430\u043C\u043E\u0441\u0430", "\u0430\u043C\u043E\u0441\u0430", "\u0430\u043C\u043E\u0441"], ["book of amos", "amos"]),
+  book("obadiah", "Obadiah", 1, "\u0410\u0432\u0434\u0438\u0439", ["\u043A\u043D\u0438\u0433\u0430 \u0430\u0432\u0434\u0438\u044F", "\u0430\u0432\u0434\u0438\u044F", "\u0430\u0432\u0434\u0438\u0439"], ["book of obadiah", "obadiah", "obad"], 1),
+  book("jonah", "Jonah", 4, "\u0418\u043E\u043D\u0430", ["\u043A\u043D\u0438\u0433\u0430 \u0438\u043E\u043D\u044B", "\u0438\u043E\u043D\u044B", "\u0438\u043E\u043D\u0430"], ["book of jonah", "jonah"]),
+  book("micah", "Micah", 7, "\u041C\u0438\u0445\u0435\u0439", ["\u043A\u043D\u0438\u0433\u0430 \u043C\u0438\u0445\u0435\u044F", "\u043C\u0438\u0445\u0435\u044F", "\u043C\u0438\u0445\u0435\u0439"], ["book of micah", "micah"]),
+  book("nahum", "Nahum", 3, "\u041D\u0430\u0443\u043C", ["\u043A\u043D\u0438\u0433\u0430 \u043D\u0430\u0443\u043C\u0430", "\u043D\u0430\u0443\u043C\u0430", "\u043D\u0430\u0443\u043C"], ["book of nahum", "nahum"]),
+  book("habakkuk", "Habakkuk", 3, "\u0410\u0432\u0432\u0430\u043A\u0443\u043C", ["\u043A\u043D\u0438\u0433\u0430 \u0430\u0432\u0432\u0430\u043A\u0443\u043C\u0430", "\u0430\u0432\u0432\u0430\u043A\u0443\u043C\u0430", "\u0430\u0432\u0432\u0430\u043A\u0443\u043C"], ["book of habakkuk", "habakkuk", "hab"]),
+  book("zephaniah", "Zephaniah", 3, "\u0421\u043E\u0444\u043E\u043D\u0438\u044F", ["\u043A\u043D\u0438\u0433\u0430 \u0441\u043E\u0444\u043E\u043D\u0438\u0438", "\u0441\u043E\u0444\u043E\u043D\u0438\u0438", "\u0441\u043E\u0444\u043E\u043D\u0438\u044F"], ["book of zephaniah", "zephaniah", "zeph"]),
+  book("haggai", "Haggai", 2, "\u0410\u0433\u0433\u0435\u0439", ["\u043A\u043D\u0438\u0433\u0430 \u0430\u0433\u0433\u0435\u044F", "\u0430\u0433\u0433\u0435\u044F", "\u0430\u0433\u0433\u0435\u0439"], ["book of haggai", "haggai", "hag"]),
+  book("zechariah", "Zechariah", 14, "\u0417\u0430\u0445\u0430\u0440\u0438\u044F", ["\u043A\u043D\u0438\u0433\u0430 \u0437\u0430\u0445\u0430\u0440\u0438\u0438", "\u0437\u0430\u0445\u0430\u0440\u0438\u0438", "\u0437\u0430\u0445\u0430\u0440\u0438\u044F"], ["book of zechariah", "zechariah", "zech"]),
+  book("malachi", "Malachi", 4, "\u041C\u0430\u043B\u0430\u0445\u0438\u044F", ["\u043A\u043D\u0438\u0433\u0430 \u043C\u0430\u043B\u0430\u0445\u0438\u0438", "\u043C\u0430\u043B\u0430\u0445\u0438\u0438", "\u043C\u0430\u043B\u0430\u0445\u0438\u044F"], ["book of malachi", "malachi", "mal"], 4),
+  book("matthew", "Matthew", 28, "\u041E\u0442 \u041C\u0430\u0442\u0444\u0435\u044F", ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0442\u0444\u0435\u044F", "\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0442\u0432\u0435\u044F", "\u043E\u0442 \u043C\u0430\u0442\u0444\u0435\u044F", "\u043E\u0442 \u043C\u0430\u0442\u0432\u0435\u044F", "\u043C\u0430\u0442\u0444\u0435\u044F", "\u043C\u0430\u0442\u0444\u0435\u044E", "\u043C\u0430\u0442\u0444\u0435\u0439", "\u043C\u0430\u0442\u0432\u0435\u044F", "\u043C\u0430\u0442\u0432\u0435\u044E", "\u043C\u0430\u0442\u0432\u0435\u0439", "\u043C\u0430\u0442\u0435\u044F"], ["gospel according to matthew", "gospel of matthew", "matthew", "mathew", "mattew"]),
+  book("mark", "Mark", 16, "\u041E\u0442 \u041C\u0430\u0440\u043A\u0430", ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0440\u043A\u0430", "\u043E\u0442 \u043C\u0430\u0440\u043A\u0430", "\u043C\u0430\u0440\u043A\u0430", "\u043C\u0430\u0440\u043A"], ["gospel according to mark", "gospel of mark", "mark"]),
+  book("luke", "Luke", 24, "\u041E\u0442 \u041B\u0443\u043A\u0438", ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043B\u0443\u043A\u0438", "\u043E\u0442 \u043B\u0443\u043A\u0438", "\u043B\u0443\u043A\u043E\u0439", "\u043B\u0443\u043A\u0438", "\u043B\u0443\u043A\u0430"], ["gospel according to luke", "gospel of luke", "luke"]),
+  book("john", "John", 21, "\u041E\u0442 \u0418\u043E\u0430\u043D\u043D\u0430", ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u0438\u043E\u0430\u043D\u043D\u0430", "\u043E\u0442 \u0438\u043E\u0430\u043D\u043D\u0430", "\u0438\u043E\u0430\u043D\u043D\u0430", "\u0438\u043E\u0430\u043D\u043D"], ["gospel according to john", "gospel of john", "john"]),
+  book("acts", "Acts", 28, "\u0414\u0435\u044F\u043D\u0438\u044F", ["\u0434\u0435\u044F\u043D\u0438\u044F \u0441\u0432\u044F\u0442\u044B\u0445 \u0430\u043F\u043E\u0441\u0442\u043E\u043B\u043E\u0432", "\u0434\u0435\u044F\u043D\u0438\u044F \u0430\u043F\u043E\u0441\u0442\u043E\u043B\u043E\u0432", "\u0434\u0435\u044F\u043D\u0438\u0439", "\u0434\u0435\u044F\u043D\u0438\u044F"], ["acts of the apostles", "book of acts", "acts"]),
+  book("romans", "Romans", 16, "\u041A \u0420\u0438\u043C\u043B\u044F\u043D\u0430\u043C", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0440\u0438\u043C\u043B\u044F\u043D\u0430\u043C", "\u043A \u0440\u0438\u043C\u043B\u044F\u043D\u0430\u043C", "\u0440\u0438\u043C\u043B\u044F\u043D\u0430\u043C"], ["letter to the romans", "book of romans", "romans"]),
+  book("1-corinthians", "1 Corinthians", 16, "1 \u041A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", ["\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u043F\u0435\u0440\u0432\u043E\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u043F\u0435\u0440\u0432\u0430\u044F \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u043F\u0435\u0440\u0432\u044B\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u043F\u0435\u0440\u0432\u043E\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u0438\u0430\u043D\u043E\u043C", "\u043F\u0435\u0440\u0432\u043E\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u0438\u0430\u043D\u0430\u043C", "1 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C"], ["first corinthians", "1st corinthians", "1 corinthians"]),
+  book("2-corinthians", "2 Corinthians", 13, "2 \u041A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", ["\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u0432\u0442\u043E\u0440\u043E\u0435 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "\u0432\u0442\u043E\u0440\u0430\u044F \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C", "2 \u043A\u043E\u0440\u0438\u043D\u0444\u044F\u043D\u0430\u043C"], ["second corinthians", "2nd corinthians", "2 corinthians"]),
+  book("galatians", "Galatians", 6, "\u041A \u0413\u0430\u043B\u0430\u0442\u0430\u043C", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0433\u0430\u043B\u0430\u0442\u0430\u043C", "\u043A \u0433\u0430\u043B\u0430\u0442\u0430\u043C", "\u0433\u0430\u043B\u0430\u0442\u0430\u043C"], ["letter to the galatians", "galatians", "gal"]),
+  book("ephesians", "Ephesians", 6, "\u041A \u0415\u0444\u0435\u0441\u044F\u043D\u0430\u043C", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0435\u0444\u0435\u0441\u044F\u043D\u0430\u043C", "\u043A \u0435\u0444\u0435\u0441\u044F\u043D\u0430\u043C", "\u0435\u0444\u0435\u0441\u044F\u043D\u0430\u043C"], ["letter to the ephesians", "ephesians", "eph"]),
+  book("philippians", "Philippians", 4, "\u041A \u0424\u0438\u043B\u0438\u043F\u043F\u0438\u0439\u0446\u0430\u043C", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0444\u0438\u043B\u0438\u043F\u043F\u0438\u0439\u0446\u0430\u043C", "\u043A \u0444\u0438\u043B\u0438\u043F\u043F\u0438\u0439\u0446\u0430\u043C", "\u0444\u0438\u043B\u0438\u043F\u043F\u0438\u0439\u0446\u0430\u043C"], ["letter to the philippians", "philippians", "phil"]),
+  book("colossians", "Colossians", 4, "\u041A \u041A\u043E\u043B\u043E\u0441\u0441\u044F\u043D\u0430\u043C", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u043A\u043E\u043B\u043E\u0441\u0441\u044F\u043D\u0430\u043C", "\u043A \u043A\u043E\u043B\u043E\u0441\u0441\u044F\u043D\u0430\u043C", "\u043A\u043E\u043B\u043E\u0441\u0441\u044F\u043D\u0430\u043C"], ["letter to the colossians", "colossians", "col"]),
+  book("1-thessalonians", "1 Thessalonians", 5, "1 \u0424\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", ["\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", "\u043F\u0435\u0440\u0432\u043E\u0435 \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", "1 \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C"], ["first thessalonians", "1st thessalonians", "1 thessalonians"]),
+  book("2-thessalonians", "2 Thessalonians", 3, "2 \u0424\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", ["\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", "\u0432\u0442\u043E\u0440\u043E\u0435 \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C", "2 \u0444\u0435\u0441\u0441\u0430\u043B\u043E\u043D\u0438\u043A\u0438\u0439\u0446\u0430\u043C"], ["second thessalonians", "2nd thessalonians", "2 thessalonians"]),
+  book("1-timothy", "1 Timothy", 6, "1 \u0422\u0438\u043C\u043E\u0444\u0435\u044E", ["\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0442\u0438\u043C\u043E\u0444\u0435\u044E", "\u043F\u0435\u0440\u0432\u043E\u0435 \u0442\u0438\u043C\u043E\u0444\u0435\u044E", "1 \u0442\u0438\u043C\u043E\u0444\u0435\u044E"], ["first timothy", "1st timothy", "1 timothy"]),
+  book("2-timothy", "2 Timothy", 4, "2 \u0422\u0438\u043C\u043E\u0444\u0435\u044E", ["\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0442\u0438\u043C\u043E\u0444\u0435\u044E", "\u0432\u0442\u043E\u0440\u043E\u0435 \u0442\u0438\u043C\u043E\u0444\u0435\u044E", "2 \u0442\u0438\u043C\u043E\u0444\u0435\u044E"], ["second timothy", "2nd timothy", "2 timothy"]),
+  book("titus", "Titus", 3, "\u041A \u0422\u0438\u0442\u0443", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0442\u0438\u0442\u0443", "\u043A \u0442\u0438\u0442\u0443", "\u0442\u0438\u0442\u0443"], ["letter to titus", "titus"]),
+  book("philemon", "Philemon", 1, "\u041A \u0424\u0438\u043B\u0438\u043C\u043E\u043D\u0443", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0444\u0438\u043B\u0438\u043C\u043E\u043D\u0443", "\u043A \u0444\u0438\u043B\u0438\u043C\u043E\u043D\u0443", "\u0444\u0438\u043B\u0438\u043C\u043E\u043D\u0443"], ["letter to philemon", "philemon", "philem"], 1),
+  book("hebrews", "Hebrews", 13, "\u041A \u0415\u0432\u0440\u0435\u044F\u043C", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043A \u0435\u0432\u0440\u0435\u044F\u043C", "\u043A \u0435\u0432\u0440\u0435\u044F\u043C", "\u0435\u0432\u0440\u0435\u044F\u043C"], ["letter to the hebrews", "book of hebrews", "hebrews", "heb"]),
+  book("james", "James", 5, "\u0418\u0430\u043A\u043E\u0432\u0430", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u0430\u043A\u043E\u0432\u0430", "\u0438\u0430\u043A\u043E\u0432\u0430", "\u0438\u0430\u043A\u043E\u0432"], ["letter of james", "book of james", "james"]),
+  book("1-peter", "1 Peter", 5, "1 \u041F\u0435\u0442\u0440\u0430", ["\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043F\u0435\u0442\u0440\u0430", "\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u0435\u0442\u0440\u0430", "1 \u043F\u0435\u0442\u0440\u0430"], ["first peter", "1st peter", "1 peter"]),
+  book("2-peter", "2 Peter", 3, "2 \u041F\u0435\u0442\u0440\u0430", ["\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u043F\u0435\u0442\u0440\u0430", "\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u0435\u0442\u0440\u0430", "2 \u043F\u0435\u0442\u0440\u0430"], ["second peter", "2nd peter", "2 peter"]),
+  book("1-john", "1 John", 5, "1 \u0418\u043E\u0430\u043D\u043D\u0430", ["\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "\u043F\u0435\u0440\u0432\u043E\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "1 \u0438\u043E\u0430\u043D\u043D\u0430"], ["first john", "1st john", "1 john"]),
+  book("2-john", "2 John", 1, "2 \u0418\u043E\u0430\u043D\u043D\u0430", ["\u0432\u0442\u043E\u0440\u043E\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "\u0432\u0442\u043E\u0440\u043E\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "2 \u0438\u043E\u0430\u043D\u043D\u0430"], ["second john", "2nd john", "2 john"], 1),
+  book("3-john", "3 John", 1, "3 \u0418\u043E\u0430\u043D\u043D\u0430", ["\u0442\u0440\u0435\u0442\u044C\u0435 \u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "\u0442\u0440\u0435\u0442\u044C\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "3 \u0438\u043E\u0430\u043D\u043D\u0430"], ["third john", "3rd john", "3 john"], 1),
+  book("jude", "Jude", 1, "\u0418\u0443\u0434\u044B", ["\u043F\u043E\u0441\u043B\u0430\u043D\u0438\u0435 \u0438\u0443\u0434\u044B", "\u0438\u0443\u0434\u044B", "\u0438\u0443\u0434\u0430"], ["letter of jude", "book of jude", "jude"], 1),
+  book("revelation", "Revelation", 22, "\u041E\u0442\u043A\u0440\u043E\u0432\u0435\u043D\u0438\u0435", ["\u043E\u0442\u043A\u0440\u043E\u0432\u0435\u043D\u0438\u0435 \u0438\u043E\u0430\u043D\u043D\u0430 \u0431\u043E\u0433\u043E\u0441\u043B\u043E\u0432\u0430", "\u043E\u0442\u043A\u0440\u043E\u0432\u0435\u043D\u0438\u0435 \u0438\u043E\u0430\u043D\u043D\u0430", "\u0430\u043F\u043E\u043A\u0430\u043B\u0438\u043F\u0441\u0438\u0441", "\u043E\u0442\u043A\u0440\u043E\u0432\u0435\u043D\u0438\u044F", "\u043E\u0442\u043A\u0440\u043E\u0432\u0435\u043D\u0438\u0435"], ["revelation of john", "book of revelation", "revelations", "revelation"])
 ];
-const NUMBER_WORDS = {};
-function addNumber(value, words) {
-  for (const word of words) NUMBER_WORDS[word] = value;
+
+// src/numberParsing.ts
+var RU_NUMBERS = {};
+var EN_NUMBERS = {};
+function add(target, value, words) {
+  for (const word of words) target[word] = value;
 }
-addNumber(1, ["\u043E\u0434\u0438\u043D", "\u043E\u0434\u043D\u0430", "\u043E\u0434\u043D\u043E", "\u043F\u0435\u0440\u0432\u044B\u0439", "\u043F\u0435\u0440\u0432\u0430\u044F", "\u043F\u0435\u0440\u0432\u043E\u0435", "\u043F\u0435\u0440\u0432\u0443\u044E", "\u043F\u0435\u0440\u0432\u043E\u0433\u043E", "\u043F\u0435\u0440\u0432\u043E\u0439", "\u043F\u0435\u0440\u0432\u043E\u043C", "\u043F\u0435\u0440\u0432\u044B\u043C"]);
-addNumber(2, ["\u0434\u0432\u0430", "\u0434\u0432\u0435", "\u0432\u0442\u043E\u0440\u043E\u0439", "\u0432\u0442\u043E\u0440\u0430\u044F", "\u0432\u0442\u043E\u0440\u043E\u0435", "\u0432\u0442\u043E\u0440\u0443\u044E", "\u0432\u0442\u043E\u0440\u043E\u0433\u043E", "\u0432\u0442\u043E\u0440\u043E\u043C", "\u0432\u0442\u043E\u0440\u044B\u043C"]);
-addNumber(3, ["\u0442\u0440\u0438", "\u0442\u0440\u0435\u0442\u0438\u0439", "\u0442\u0440\u0435\u0442\u044C\u044F", "\u0442\u0440\u0435\u0442\u044C\u0435", "\u0442\u0440\u0435\u0442\u044C\u044E", "\u0442\u0440\u0435\u0442\u044C\u0435\u0433\u043E", "\u0442\u0440\u0435\u0442\u044C\u0435\u043C", "\u0442\u0440\u0435\u0442\u044C\u0438\u043C"]);
-addNumber(4, ["\u0447\u0435\u0442\u044B\u0440\u0435", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u044B\u0439", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u0430\u044F", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u0435", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u0443\u044E", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u0433\u043E", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u0439", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u043C"]);
-addNumber(5, ["\u043F\u044F\u0442\u044C", "\u043F\u044F\u0442\u044B\u0439", "\u043F\u044F\u0442\u0430\u044F", "\u043F\u044F\u0442\u043E\u0435", "\u043F\u044F\u0442\u043E\u0433\u043E", "\u043F\u044F\u0442\u043E\u0439", "\u043F\u044F\u0442\u043E\u043C"]);
-addNumber(6, ["\u0448\u0435\u0441\u0442\u044C", "\u0448\u0435\u0441\u0442\u043E\u0439", "\u0448\u0435\u0441\u0442\u0430\u044F", "\u0448\u0435\u0441\u0442\u043E\u0435", "\u0448\u0435\u0441\u0442\u043E\u0433\u043E", "\u0448\u0435\u0441\u0442\u043E\u0439", "\u0448\u0435\u0441\u0442\u043E\u043C"]);
-addNumber(7, ["\u0441\u0435\u043C\u044C", "\u0441\u0435\u0434\u044C\u043C\u043E\u0439", "\u0441\u0435\u0434\u044C\u043C\u0430\u044F", "\u0441\u0435\u0434\u044C\u043C\u043E\u0435", "\u0441\u0435\u0434\u044C\u043C\u043E\u0433\u043E", "\u0441\u0435\u0434\u044C\u043C\u043E\u0439", "\u0441\u0435\u0434\u044C\u043C\u043E\u043C"]);
-addNumber(8, ["\u0432\u043E\u0441\u0435\u043C\u044C", "\u0432\u043E\u0441\u044C\u043C\u043E\u0439", "\u0432\u043E\u0441\u044C\u043C\u0430\u044F", "\u0432\u043E\u0441\u044C\u043C\u043E\u0435", "\u0432\u043E\u0441\u044C\u043C\u043E\u0433\u043E", "\u0432\u043E\u0441\u044C\u043C\u043E\u043C"]);
-addNumber(9, ["\u0434\u0435\u0432\u044F\u0442\u044C", "\u0434\u0435\u0432\u044F\u0442\u044B\u0439", "\u0434\u0435\u0432\u044F\u0442\u0430\u044F", "\u0434\u0435\u0432\u044F\u0442\u043E\u0435", "\u0434\u0435\u0432\u044F\u0442\u043E\u0433\u043E", "\u0434\u0435\u0432\u044F\u0442\u043E\u0439", "\u0434\u0435\u0432\u044F\u0442\u043E\u043C"]);
-addNumber(10, ["\u0434\u0435\u0441\u044F\u0442\u044C", "\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u0434\u0435\u0441\u044F\u0442\u043E\u0435", "\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u0434\u0435\u0441\u044F\u0442\u043E\u0439", "\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
-addNumber(11, ["\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(12, ["\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(13, ["\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(14, ["\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(15, ["\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(16, ["\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(17, ["\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(18, ["\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(19, ["\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(20, ["\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u044C", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(30, ["\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u044C", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u044B\u0439", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u0430\u044F", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u043E\u0439", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u043E\u043C"]);
-addNumber(40, ["\u0441\u043E\u0440\u043E\u043A", "\u0441\u043E\u0440\u043E\u043A\u043E\u0432\u043E\u0439", "\u0441\u043E\u0440\u043E\u043A\u043E\u0432\u0430\u044F", "\u0441\u043E\u0440\u043E\u043A\u043E\u0432\u043E\u0433\u043E", "\u0441\u043E\u0440\u043E\u043A\u043E\u0432\u043E\u0439", "\u0441\u043E\u0440\u043E\u043A\u043E\u0432\u043E\u043C"]);
-addNumber(50, ["\u043F\u044F\u0442\u044C\u0434\u0435\u0441\u044F\u0442", "\u043F\u044F\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u043F\u044F\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u043F\u044F\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u043F\u044F\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
-addNumber(60, ["\u0448\u0435\u0441\u0442\u044C\u0434\u0435\u0441\u044F\u0442", "\u0448\u0435\u0441\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u0448\u0435\u0441\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u0448\u0435\u0441\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u0448\u0435\u0441\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
-addNumber(70, ["\u0441\u0435\u043C\u044C\u0434\u0435\u0441\u044F\u0442", "\u0441\u0435\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u0441\u0435\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u0441\u0435\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u0441\u0435\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
-addNumber(80, ["\u0432\u043E\u0441\u0435\u043C\u044C\u0434\u0435\u0441\u044F\u0442", "\u0432\u043E\u0441\u044C\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u0432\u043E\u0441\u044C\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u0432\u043E\u0441\u044C\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u0432\u043E\u0441\u044C\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
-addNumber(90, ["\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u043E", "\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u044B\u0439", "\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u0430\u044F", "\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u043E\u0433\u043E", "\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u043E\u043C"]);
-addNumber(100, ["\u0441\u0442\u043E", "\u0441\u043E\u0442\u044B\u0439", "\u0441\u043E\u0442\u0430\u044F", "\u0441\u043E\u0442\u043E\u0433\u043E", "\u0441\u043E\u0442\u043E\u043C"]);
-function normalize(text) {
-  return text.toLocaleLowerCase("ru-RU").replaceAll("\u0451", "\u0435").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim();
+add(RU_NUMBERS, 1, ["\u043E\u0434\u0438\u043D", "\u043E\u0434\u043D\u0430", "\u043E\u0434\u043D\u043E", "\u043F\u0435\u0440\u0432\u044B\u0439", "\u043F\u0435\u0440\u0432\u0430\u044F", "\u043F\u0435\u0440\u0432\u043E\u0435", "\u043F\u0435\u0440\u0432\u0443\u044E", "\u043F\u0435\u0440\u0432\u043E\u0433\u043E", "\u043F\u0435\u0440\u0432\u043E\u0439", "\u043F\u0435\u0440\u0432\u043E\u043C", "\u043F\u0435\u0440\u0432\u044B\u043C"]);
+add(RU_NUMBERS, 2, ["\u0434\u0432\u0430", "\u0434\u0432\u0435", "\u0432\u0442\u043E\u0440\u043E\u0439", "\u0432\u0442\u043E\u0440\u0430\u044F", "\u0432\u0442\u043E\u0440\u043E\u0435", "\u0432\u0442\u043E\u0440\u0443\u044E", "\u0432\u0442\u043E\u0440\u043E\u0433\u043E", "\u0432\u0442\u043E\u0440\u043E\u043C", "\u0432\u0442\u043E\u0440\u044B\u043C"]);
+add(RU_NUMBERS, 3, ["\u0442\u0440\u0438", "\u0442\u0440\u0435\u0442\u0438\u0439", "\u0442\u0440\u0435\u0442\u044C\u044F", "\u0442\u0440\u0435\u0442\u044C\u0435", "\u0442\u0440\u0435\u0442\u044C\u044E", "\u0442\u0440\u0435\u0442\u044C\u0435\u0433\u043E", "\u0442\u0440\u0435\u0442\u044C\u0435\u043C", "\u0442\u0440\u0435\u0442\u044C\u0438\u043C"]);
+add(RU_NUMBERS, 4, ["\u0447\u0435\u0442\u044B\u0440\u0435", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u044B\u0439", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u0430\u044F", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u0435", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u0443\u044E", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u0433\u043E", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u0439", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 5, ["\u043F\u044F\u0442\u044C", "\u043F\u044F\u0442\u044B\u0439", "\u043F\u044F\u0442\u0430\u044F", "\u043F\u044F\u0442\u043E\u0435", "\u043F\u044F\u0442\u043E\u0433\u043E", "\u043F\u044F\u0442\u043E\u0439", "\u043F\u044F\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 6, ["\u0448\u0435\u0441\u0442\u044C", "\u0448\u0435\u0441\u0442\u043E\u0439", "\u0448\u0435\u0441\u0442\u0430\u044F", "\u0448\u0435\u0441\u0442\u043E\u0435", "\u0448\u0435\u0441\u0442\u043E\u0433\u043E", "\u0448\u0435\u0441\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 7, ["\u0441\u0435\u043C\u044C", "\u0441\u0435\u0434\u044C\u043C\u043E\u0439", "\u0441\u0435\u0434\u044C\u043C\u0430\u044F", "\u0441\u0435\u0434\u044C\u043C\u043E\u0435", "\u0441\u0435\u0434\u044C\u043C\u043E\u0433\u043E", "\u0441\u0435\u0434\u044C\u043C\u043E\u043C"]);
+add(RU_NUMBERS, 8, ["\u0432\u043E\u0441\u0435\u043C\u044C", "\u0432\u043E\u0441\u044C\u043C\u043E\u0439", "\u0432\u043E\u0441\u044C\u043C\u0430\u044F", "\u0432\u043E\u0441\u044C\u043C\u043E\u0435", "\u0432\u043E\u0441\u044C\u043C\u043E\u0433\u043E", "\u0432\u043E\u0441\u044C\u043C\u043E\u043C"]);
+add(RU_NUMBERS, 9, ["\u0434\u0435\u0432\u044F\u0442\u044C", "\u0434\u0435\u0432\u044F\u0442\u044B\u0439", "\u0434\u0435\u0432\u044F\u0442\u0430\u044F", "\u0434\u0435\u0432\u044F\u0442\u043E\u0435", "\u0434\u0435\u0432\u044F\u0442\u043E\u0433\u043E", "\u0434\u0435\u0432\u044F\u0442\u043E\u0439", "\u0434\u0435\u0432\u044F\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 10, ["\u0434\u0435\u0441\u044F\u0442\u044C", "\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u0434\u0435\u0441\u044F\u0442\u043E\u0435", "\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u0434\u0435\u0441\u044F\u0442\u043E\u0439", "\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 11, ["\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u043E\u0434\u0438\u043D\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 12, ["\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0434\u0432\u0435\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 13, ["\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0442\u0440\u0438\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 14, ["\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0447\u0435\u0442\u044B\u0440\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 15, ["\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u043F\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 16, ["\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0448\u0435\u0441\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 17, ["\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 18, ["\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0432\u043E\u0441\u0435\u043C\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 19, ["\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044C", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0434\u0435\u0432\u044F\u0442\u043D\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 20, ["\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u044C", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u044B\u0439", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u0430\u044F", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u043E\u0439", "\u0434\u0432\u0430\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 30, ["\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u044C", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u044B\u0439", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u0430\u044F", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u043E\u0433\u043E", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u043E\u0439", "\u0442\u0440\u0438\u0434\u0446\u0430\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 40, ["\u0441\u043E\u0440\u043E\u043A", "\u0441\u043E\u0440\u043E\u043A\u043E\u0432\u043E\u0439", "\u0441\u043E\u0440\u043E\u043A\u043E\u0432\u0430\u044F", "\u0441\u043E\u0440\u043E\u043A\u043E\u0432\u043E\u0433\u043E", "\u0441\u043E\u0440\u043E\u043A\u043E\u0432\u043E\u043C"]);
+add(RU_NUMBERS, 50, ["\u043F\u044F\u0442\u044C\u0434\u0435\u0441\u044F\u0442", "\u043F\u044F\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u043F\u044F\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u043F\u044F\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u043F\u044F\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 60, ["\u0448\u0435\u0441\u0442\u044C\u0434\u0435\u0441\u044F\u0442", "\u0448\u0435\u0441\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u0448\u0435\u0441\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u0448\u0435\u0441\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u0448\u0435\u0441\u0442\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 70, ["\u0441\u0435\u043C\u044C\u0434\u0435\u0441\u044F\u0442", "\u0441\u0435\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u0441\u0435\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u0441\u0435\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u0441\u0435\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 80, ["\u0432\u043E\u0441\u0435\u043C\u044C\u0434\u0435\u0441\u044F\u0442", "\u0432\u043E\u0441\u044C\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u044B\u0439", "\u0432\u043E\u0441\u044C\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u0430\u044F", "\u0432\u043E\u0441\u044C\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u0433\u043E", "\u0432\u043E\u0441\u044C\u043C\u0438\u0434\u0435\u0441\u044F\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 90, ["\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u043E", "\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u044B\u0439", "\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u0430\u044F", "\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u043E\u0433\u043E", "\u0434\u0435\u0432\u044F\u043D\u043E\u0441\u0442\u043E\u043C"]);
+add(RU_NUMBERS, 100, ["\u0441\u0442\u043E", "\u0441\u043E\u0442\u044B\u0439", "\u0441\u043E\u0442\u0430\u044F", "\u0441\u043E\u0442\u043E\u0433\u043E", "\u0441\u043E\u0442\u043E\u043C"]);
+add(EN_NUMBERS, 1, ["one", "first"]);
+add(EN_NUMBERS, 2, ["two", "second"]);
+add(EN_NUMBERS, 3, ["three", "third"]);
+add(EN_NUMBERS, 4, ["four", "fourth"]);
+add(EN_NUMBERS, 5, ["five", "fifth"]);
+add(EN_NUMBERS, 6, ["six", "sixth"]);
+add(EN_NUMBERS, 7, ["seven", "seventh"]);
+add(EN_NUMBERS, 8, ["eight", "eighth"]);
+add(EN_NUMBERS, 9, ["nine", "ninth"]);
+add(EN_NUMBERS, 10, ["ten", "tenth"]);
+add(EN_NUMBERS, 11, ["eleven", "eleventh"]);
+add(EN_NUMBERS, 12, ["twelve", "twelfth"]);
+add(EN_NUMBERS, 13, ["thirteen", "thirteenth"]);
+add(EN_NUMBERS, 14, ["fourteen", "fourteenth"]);
+add(EN_NUMBERS, 15, ["fifteen", "fifteenth"]);
+add(EN_NUMBERS, 16, ["sixteen", "sixteenth"]);
+add(EN_NUMBERS, 17, ["seventeen", "seventeenth"]);
+add(EN_NUMBERS, 18, ["eighteen", "eighteenth"]);
+add(EN_NUMBERS, 19, ["nineteen", "nineteenth"]);
+add(EN_NUMBERS, 20, ["twenty", "twentieth"]);
+add(EN_NUMBERS, 30, ["thirty", "thirtieth"]);
+add(EN_NUMBERS, 40, ["forty", "fortieth"]);
+add(EN_NUMBERS, 50, ["fifty", "fiftieth"]);
+add(EN_NUMBERS, 60, ["sixty", "sixtieth"]);
+add(EN_NUMBERS, 70, ["seventy", "seventieth"]);
+add(EN_NUMBERS, 80, ["eighty", "eightieth"]);
+add(EN_NUMBERS, 90, ["ninety", "ninetieth"]);
+add(EN_NUMBERS, 100, ["hundred", "hundredth"]);
+var FILLERS = {
+  ru: /* @__PURE__ */ new Set(["\u043D\u043E\u043C\u0435\u0440", "\u044D\u0442\u043E", "\u0441", "\u0441\u043E", "\u043F\u043E", "\u0438"]),
+  en: /* @__PURE__ */ new Set(["number", "the", "and", "from", "at"])
+};
+function normalizeText(text) {
+  return text.toLocaleLowerCase().replaceAll("\u0451", "\u0435").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim();
 }
-function tokens(text) {
-  return normalize(text).match(/[а-яa-z0-9]+/g) ?? [];
+function tokenize(text) {
+  return normalizeText(text).match(/[а-яa-z0-9]+/g) ?? [];
 }
-function tokenNumber(word) {
-  if (/^\d{1,3}$/.test(word)) return Number(word);
-  return NUMBER_WORDS[word] ?? null;
+function isNumberToken(token, language) {
+  return /^\d{1,3}$/.test(token) || (language === "ru" ? RU_NUMBERS : EN_NUMBERS)[token] !== void 0;
 }
-function sumNumberValues(values) {
-  if (values.length === 0) return null;
-  const total = values.reduce((sum, value) => sum + value, 0);
-  return total > 0 && total <= 176 ? total : null;
-}
-function parseTrailingNumber(words) {
-  const values = [];
-  for (let index = words.length - 1; index >= Math.max(0, words.length - 5); index -= 1) {
-    if (/^\d{1,3}$/.test(words[index])) return Number(words[index]);
-    const value = tokenNumber(words[index]);
-    if (value === null) {
-      if (values.length > 0) break;
+function parseNumberTokens(input, language, max = 176) {
+  const words = input.filter((word) => !FILLERS[language].has(word));
+  if (words.length === 0) return null;
+  if (words.length === 1 && /^\d{1,3}$/.test(words[0])) {
+    const numeric = Number(words[0]);
+    return numeric >= 1 && numeric <= max ? numeric : null;
+  }
+  if (words.some((word) => /^\d/.test(word))) return null;
+  const map = language === "ru" ? RU_NUMBERS : EN_NUMBERS;
+  let hundreds = 0;
+  let current = 0;
+  for (const word of words) {
+    const value = map[word];
+    if (!value) return null;
+    if (value === 100) {
+      if (hundreds || current > 9) return null;
+      hundreds = (current || 1) * 100;
+      current = 0;
       continue;
     }
-    values.unshift(value);
-  }
-  return sumNumberValues(values);
-}
-function parseLeadingNumber(words) {
-  const values = [];
-  const fillers = /* @__PURE__ */ new Set(["\u043D\u043E\u043C\u0435\u0440", "\u044D\u0442\u043E", "\u0441", "\u0441\u043E"]);
-  for (const word of words.slice(0, 5)) {
-    if (/^\d{1,3}$/.test(word)) return Number(word);
-    const value = tokenNumber(word);
-    if (value === null) {
-      if (values.length > 0) break;
-      if (fillers.has(word)) continue;
-      break;
+    if (value >= 20) {
+      if (current !== 0) return null;
+      current = value;
+      continue;
     }
-    values.push(value);
+    if (current >= 20 && current < 100) current += value;
+    else if (current === 0) current = value;
+    else return null;
   }
-  return sumNumberValues(values);
+  const total = hundreds + current;
+  return total >= 1 && total <= max ? total : null;
 }
-function numberNearLabel(text, label) {
-  const match = label.exec(text);
-  if (!match || match.index === void 0) return null;
-  const before = tokens(text.slice(Math.max(0, match.index - 55), match.index));
-  const after = tokens(text.slice(match.index + match[0].length, match.index + match[0].length + 55));
-  const beforeValue = parseTrailingNumber(before);
-  if (beforeValue) return beforeValue;
-  return parseLeadingNumber(after);
-}
-function verseRangeNearLabel(text) {
-  const label = /стих(?:а|е|и|ов|ом)?/.exec(text);
-  if (!label || label.index === void 0) return null;
-  const before = tokens(text.slice(Math.max(0, label.index - 70), label.index));
-  const connectors = /* @__PURE__ */ new Set(["\u0438", "\u0434\u043E", "\u043F\u043E"]);
-  for (let index = before.length - 2; index >= Math.max(0, before.length - 8); index -= 1) {
-    if (!connectors.has(before[index])) continue;
-    const verseStart2 = parseTrailingNumber(before.slice(0, index));
-    const verseEnd = parseLeadingNumber(before.slice(index + 1));
-    if (verseStart2 && verseEnd && verseEnd >= verseStart2) return { verseStart: verseStart2, verseEnd };
+function parseTrailingNumber(words, language, max = 176) {
+  for (let length = Math.min(6, words.length); length >= 1; length -= 1) {
+    const value = parseNumberTokens(words.slice(-length), language, max);
+    if (value) return value;
   }
-  const verseStart = parseTrailingNumber(before) ?? numberNearLabel(text, /стих(?:а|е|и|ов|ом)?/);
-  return verseStart ? { verseStart } : null;
+  return null;
 }
+function parseLeadingNumber(words, language, max = 176) {
+  for (let length = Math.min(6, words.length); length >= 1; length -= 1) {
+    const value = parseNumberTokens(words.slice(0, length), language, max);
+    if (value) return value;
+  }
+  return null;
+}
+function parseTwoNumbers(words, language) {
+  const clean = words.filter((word) => !FILLERS[language].has(word));
+  for (let split = 1; split < clean.length; split += 1) {
+    const first = parseNumberTokens(clean.slice(0, split), language, 150);
+    const second = parseNumberTokens(clean.slice(split), language, 176);
+    if (first && second) return [first, second];
+  }
+  return null;
+}
+
+// src/bibleVerseParser.ts
+var CONTEXT_TTL_MS = 6 * 60 * 60 * 1e3;
+var DUPLICATE_TTL_MS = 20 * 1e3;
+var CHAPTER_LABELS = {
+  ru: /глав(?:а|ы|е|у|ой|ою)/g,
+  en: /chapters?/g
+};
+var VERSE_LABELS = {
+  ru: /стих(?:а|е|и|ов|ом)?/g,
+  en: /verses?/g
+};
+var RANGE_CONNECTORS = {
+  ru: /* @__PURE__ */ new Set(["\u0438", "\u0434\u043E", "\u043F\u043E"]),
+  en: /* @__PURE__ */ new Set(["and", "to", "through", "thru"])
+};
 function isWordCharacter(character) {
   return Boolean(character && /[а-яa-z0-9]/.test(character));
 }
@@ -169,11 +234,7 @@ function levenshteinDistance(left, right) {
     const current = [leftIndex];
     for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
       const substitution = previous[rightIndex - 1] + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1);
-      current[rightIndex] = Math.min(
-        current[rightIndex - 1] + 1,
-        previous[rightIndex] + 1,
-        substitution
-      );
+      current[rightIndex] = Math.min(current[rightIndex - 1] + 1, previous[rightIndex] + 1, substitution);
     }
     previous.splice(0, previous.length, ...current);
   }
@@ -186,38 +247,44 @@ function tokenSpans(text) {
     end: (match.index ?? 0) + match[0].length
   }));
 }
-function allowsFuzzyBookMatch(text) {
-  return /\d{1,3}\s*[:.]\s*\d{1,3}|глав(?:а|ы|е|у|ой|ою)|стих(?:а|е|и|ов|ом)?|имел[аи]?\s+в\s+виду|имею\s+в\s+виду|поправлюсь|точнее|вернее/.test(text);
+function allowsFuzzyBookMatch(text, language) {
+  const sharedCue = /\d{1,3}\s*[:.]\s*\d{1,3}/.test(text);
+  if (language === "ru") {
+    return sharedCue || /глав(?:а|ы|е|у|ой|ою)|стих(?:а|е|и|ов|ом)?|имел[аи]?\s+в\s+виду|имею\s+в\s+виду|поправлюсь|точнее|вернее/.test(text);
+  }
+  return sharedCue || /chapters?|verses?|i\s+(?:mean|meant)|sorry|correction|rather/.test(text);
 }
-function findBook(text) {
+function findBook(text, language) {
   const candidates = [];
-  for (const book of BOOKS) {
-    for (const alias of book.aliases) {
+  for (const definition of BOOKS) {
+    for (const rawAlias of definition.aliases[language]) {
+      const alias = normalizeText(rawAlias);
       let index = text.indexOf(alias);
       while (index >= 0) {
         if (hasTokenBoundaries(text, index, alias.length)) {
-          candidates.push({ ...book, index, length: alias.length, matchKind: "exact", distance: 0 });
+          candidates.push({ ...definition, index, end: index + alias.length, length: alias.length, matchKind: "exact", distance: 0 });
         }
         index = text.indexOf(alias, index + 1);
       }
     }
   }
-  if (allowsFuzzyBookMatch(text)) {
+  if (allowsFuzzyBookMatch(text, language)) {
     const spans = tokenSpans(text);
-    for (const book of BOOKS) {
-      for (const alias of book.aliases) {
-        const aliasWords = tokens(alias);
+    for (const definition of BOOKS) {
+      for (const rawAlias of definition.aliases[language]) {
+        const aliasWords = tokenize(rawAlias);
         const compactAlias = aliasWords.join(" ");
-        if (compactAlias.length < 5) continue;
+        if (compactAlias.length < 6) continue;
         for (let index = 0; index <= spans.length - aliasWords.length; index += 1) {
           const window = spans.slice(index, index + aliasWords.length);
           const observed = window.map((span) => span.value).join(" ");
-          const maximumDistance = compactAlias.length >= 9 ? 2 : 1;
+          const maximumDistance = compactAlias.length >= 10 ? 2 : 1;
           const distance = levenshteinDistance(observed, compactAlias);
           if (distance < 1 || distance > maximumDistance) continue;
           candidates.push({
-            ...book,
+            ...definition,
             index: window[0].index,
+            end: window.at(-1).end,
             length: window.at(-1).end - window[0].index,
             matchKind: "fuzzy",
             distance
@@ -226,31 +293,102 @@ function findBook(text) {
       }
     }
   }
-  return candidates.sort((left, right) => right.index - left.index || left.distance - right.distance || Number(left.matchKind === "exact") - Number(right.matchKind === "exact") || right.length - left.length)[0] ?? null;
+  return candidates.sort((left, right) => right.end - left.end || left.distance - right.distance || Number(right.matchKind === "exact") - Number(left.matchKind === "exact") || right.length - left.length)[0] ?? null;
 }
-function isNegatedCorrection(text, book) {
-  const before = text.slice(Math.max(0, book.index - 12), book.index);
-  const correctionCue = /имел[аи]?\s+в\s+виду|имею\s+в\s+виду|поправлюсь|точнее|вернее|(?:^|\s)не\s/.test(text);
-  return correctionCue && /(?:^|\s)не\s*$/.test(before);
+function isNegatedBook(text, match, language) {
+  const before = text.slice(Math.max(0, match.index - 18), match.index);
+  return language === "ru" ? /(?:^|\s)не\s*$/.test(before) : /(?:^|\s)not\s*$/.test(before);
 }
-function explicitReference(text, book) {
-  const searchText = book ? text.slice(book.index + book.length, book.index + book.length + 90) : text;
-  const match = searchText.match(/(?:глава\s*)?(\d{1,3})\s*[:.]\s*(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?/);
-  if (!match) return null;
-  const chapter = Number(match[1]);
-  const verseStart = Number(match[2]);
-  const verseEnd = match[3] ? Number(match[3]) : void 0;
-  if (chapter < 1 || chapter > 150 || verseStart < 1 || verseStart > 176) return null;
-  return { chapter, verseStart, verseEnd };
+function firstLabel(text, pattern) {
+  pattern.lastIndex = 0;
+  return pattern.exec(text);
+}
+function numberNearLabel(text, labelPattern, language, max) {
+  const label = firstLabel(text, labelPattern);
+  if (!label || label.index === void 0) return null;
+  const before = tokenize(text.slice(Math.max(0, label.index - 70), label.index));
+  const afterStart = label.index + label[0].length;
+  const after = tokenize(text.slice(afterStart, afterStart + 70));
+  const beforeValue = parseTrailingNumber(before, language, max);
+  const afterValue = parseLeadingNumber(after, language, max);
+  return beforeValue ?? afterValue;
+}
+function rangeFromTokens(words, language, preferLeading) {
+  const connectors = RANGE_CONNECTORS[language];
+  for (let index = 1; index < words.length - 1; index += 1) {
+    if (!connectors.has(words[index])) continue;
+    const verseStart2 = parseTrailingNumber(words.slice(0, index), language);
+    const verseEnd = parseLeadingNumber(words.slice(index + 1), language);
+    if (verseStart2 && verseEnd && verseEnd >= verseStart2) return { verseStart: verseStart2, verseEnd };
+  }
+  const verseStart = preferLeading ? parseLeadingNumber(words, language) ?? parseTrailingNumber(words, language) : parseTrailingNumber(words, language) ?? parseLeadingNumber(words, language);
+  return verseStart ? { verseStart } : null;
+}
+function verseRangeNearLabel(text, language) {
+  const label = firstLabel(text, VERSE_LABELS[language]);
+  if (!label || label.index === void 0) return null;
+  const before = tokenize(text.slice(Math.max(0, label.index - 85), label.index));
+  const afterStart = label.index + label[0].length;
+  const after = tokenize(text.slice(afterStart, afterStart + 85));
+  return rangeFromTokens(after, language, true) ?? rangeFromTokens(before, language, false);
+}
+function explicitColonReference(text, match) {
+  const searchText = match ? text.slice(match.end, match.end + 100) : text;
+  const found = searchText.match(/(?:chapter\s*)?(\d{1,3})\s*[:.]\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?/);
+  if (!found) return null;
+  return {
+    chapter: Number(found[1]),
+    verseStart: Number(found[2]),
+    verseEnd: found[3] ? Number(found[3]) : void 0
+  };
+}
+function unlabelledBookPair(text, match, language) {
+  const after = text.slice(match.end, match.end + 80);
+  if (firstLabel(after, CHAPTER_LABELS[language]) || firstLabel(after, VERSE_LABELS[language])) return null;
+  const words = [];
+  for (const word of tokenize(after).slice(0, 10)) {
+    if (isNumberToken(word, language) || RANGE_CONNECTORS[language].has(word)) words.push(word);
+    else if (words.length > 0) break;
+    else if (!["at", "in", "\u0432"].includes(word)) break;
+  }
+  if (words.length < 2) return null;
+  return parseTwoNumbers(words, language);
+}
+function chapterBesideBook(text, match, language) {
+  const verseLabel = firstLabel(text.slice(match.end), VERSE_LABELS[language]);
+  if (match.id === "psalms") {
+    const before = tokenize(text.slice(Math.max(0, match.index - 45), match.index));
+    const between = verseLabel?.index === void 0 ? tokenize(text.slice(match.end, match.end + 45)) : tokenize(text.slice(match.end, match.end + verseLabel.index));
+    const psalmNumber = parseTrailingNumber(before, language, match.chapters) ?? parseLeadingNumber(between, language, match.chapters) ?? parseTrailingNumber(between, language, match.chapters);
+    if (psalmNumber) return psalmNumber;
+  }
+  if (verseLabel?.index !== void 0) {
+    const between = tokenize(text.slice(match.end, match.end + verseLabel.index));
+    const value = parseLeadingNumber(between, language, match.chapters) ?? parseTrailingNumber(between, language, match.chapters);
+    if (value) return value;
+  }
+  return null;
 }
 function referenceKey(bookId, chapter, verseStart, verseEnd) {
   return `${bookId}:${chapter}:${verseStart}:${verseEnd ?? ""}`;
 }
-class RussianVerseReferenceDetector {
+var BibleVerseReferenceDetector = class {
+  language;
   contextBook = null;
   contextChapter = null;
   contextUpdatedAt = 0;
   recent = /* @__PURE__ */ new Map();
+  constructor(language = "ru") {
+    this.language = language;
+  }
+  setLanguage(language) {
+    if (this.language === language) return;
+    this.language = language;
+    this.reset();
+  }
+  getLanguage() {
+    return this.language;
+  }
   reset() {
     this.contextBook = null;
     this.contextChapter = null;
@@ -258,46 +396,43 @@ class RussianVerseReferenceDetector {
     this.recent.clear();
   }
   readContext(now = Date.now()) {
-    if (this.contextUpdatedAt && now - this.contextUpdatedAt > CONTEXT_TTL_MS) {
-      this.contextBook = null;
-      this.contextChapter = null;
-      this.contextUpdatedAt = 0;
-    }
+    if (this.contextUpdatedAt && now - this.contextUpdatedAt > CONTEXT_TTL_MS) this.reset();
     return {
       bookId: this.contextBook?.id ?? null,
-      book: this.contextBook?.book ?? null,
+      book: this.contextBook?.names[this.language] ?? null,
       canonicalBook: this.contextBook?.canonicalBook ?? null,
       chapter: this.contextChapter,
       updatedAt: this.contextUpdatedAt ? new Date(this.contextUpdatedAt).toISOString() : null
     };
   }
   consume(sourceText, now = Date.now()) {
-    const text = normalize(sourceText);
+    const text = normalizeText(sourceText);
     if (!text) return [];
     this.readContext(now);
-    let bookMatch = findBook(text);
+    let bookMatch = findBook(text, this.language);
     const previousBook = this.contextBook;
-    if (bookMatch && isNegatedCorrection(text, bookMatch)) {
+    if (bookMatch && isNegatedBook(text, bookMatch, this.language)) {
       this.contextBook = null;
       this.contextChapter = null;
       this.contextUpdatedAt = 0;
       bookMatch = null;
-    }
-    if (bookMatch) {
+    } else if (bookMatch) {
       this.contextBook = bookMatch;
       if (previousBook?.id !== bookMatch.id) this.contextChapter = null;
       this.contextUpdatedAt = now;
     }
-    const exact = explicitReference(text, bookMatch);
-    const spokenVerses = exact ? null : verseRangeNearLabel(text);
-    const verseStart = exact?.verseStart ?? spokenVerses?.verseStart ?? null;
-    const verseEnd = exact?.verseEnd ?? spokenVerses?.verseEnd;
-    const chapter = exact?.chapter ?? numberNearLabel(text, /глав(?:а|ы|е|у|ой|ою)/) ?? (this.contextBook?.id === "psalms" ? numberNearLabel(text, /псал(?:ом|ма|ме|мы|мов|мах|тирь|тырь)/) : null) ?? (verseStart ? this.contextBook?.verseOnlyChapter ?? null : null);
-    if (chapter && chapter <= 150) {
+    const colonReference = explicitColonReference(text, bookMatch);
+    const pair = !colonReference && bookMatch ? unlabelledBookPair(text, bookMatch, this.language) : null;
+    const spokenVerses = colonReference || pair ? null : verseRangeNearLabel(text, this.language);
+    const verseStart = colonReference?.verseStart ?? pair?.[1] ?? spokenVerses?.verseStart ?? null;
+    const verseEnd = colonReference?.verseEnd ?? spokenVerses?.verseEnd;
+    const chapter = colonReference?.chapter ?? pair?.[0] ?? numberNearLabel(text, CHAPTER_LABELS[this.language], this.language, this.contextBook?.chapters ?? 150) ?? (bookMatch ? chapterBesideBook(text, bookMatch, this.language) : null) ?? (verseStart ? this.contextBook?.fallbackChapterOnVerse ?? null : null);
+    if (chapter && this.contextBook && chapter <= this.contextBook.chapters) {
       this.contextChapter = chapter;
       this.contextUpdatedAt = now;
     }
-    if (!verseStart || !this.contextBook || !this.contextChapter) return [];
+    if (!verseStart || verseStart > 176 || !this.contextBook || !this.contextChapter) return [];
+    if (verseEnd && (verseEnd < verseStart || verseEnd > 176)) return [];
     const key = referenceKey(this.contextBook.id, this.contextChapter, verseStart, verseEnd);
     const lastSeen = this.recent.get(key) ?? 0;
     if (now - lastSeen < DUPLICATE_TTL_MS) return [];
@@ -310,19 +445,19 @@ class RussianVerseReferenceDetector {
     return [{
       id: `${key}:${now}`,
       bookId: this.contextBook.id,
-      book: this.contextBook.book,
+      book: this.contextBook.names[this.language],
       canonicalBook: this.contextBook.canonicalBook,
       chapter: this.contextChapter,
       verseStart,
       verseEnd,
-      display: `${this.contextBook.book} ${this.contextChapter}:${suffix}`,
+      display: `${this.contextBook.names[this.language]} ${this.contextChapter}:${suffix}`,
       canonical: `${this.contextBook.canonicalBook} ${this.contextChapter}:${suffix}`,
       confidence,
       sourceText: sourceText.trim(),
       detectedAt: new Date(now).toISOString()
     }];
   }
-}
+};
 export {
-  RussianVerseReferenceDetector
+  BibleVerseReferenceDetector
 };

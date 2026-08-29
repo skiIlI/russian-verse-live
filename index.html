@@ -4,33 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#171717" />
-  <meta name="description" content="Free Russian sermon Bible verse detector." />
+  <meta name="description" content="Free Russian and English sermon Bible verse detector." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Verse Listener" />
-  <title>Russian Verse Listener</title>
+  <title>Verse Listener</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/icon.svg" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <main class="app-shell">
     <header class="app-header">
-      <strong>Automation Core</strong>
+      <strong>Verse Listener</strong>
       <div class="header-actions">
-        <button id="installButton" class="icon-button" type="button" aria-label="Install or download app" title="Install or download">⇩</button>
+        <button id="moreButton" class="icon-button" type="button" aria-label="More options" title="More options">•••</button>
         <button id="themeButton" class="icon-button" type="button" aria-label="Toggle theme" title="Toggle theme">◐</button>
       </div>
     </header>
-
-    <nav class="tab-list" aria-label="Automation sections">
-      <span>School</span>
-      <span>Browser</span>
-      <span>Windows</span>
-      <span>Sermon app</span>
-      <span class="active">Miscellaneous</span>
-    </nav>
 
     <section class="content" aria-labelledby="liveAudioHeading">
       <div class="section-heading">
@@ -43,9 +35,14 @@
           <div class="listener-title-row">
             <div id="listenerIcon" class="listener-icon" aria-hidden="true">📖</div>
             <div class="listener-copy">
-              <h2>Russian Verse Detector</h2>
+              <h2>Bible Verse Detector</h2>
               <p id="message">Ready to listen for Russian Bible references.</p>
             </div>
+          </div>
+
+          <div id="languageSwitch" class="language-switch" role="group" aria-label="Listening language">
+            <button class="language active" type="button" data-language="ru" aria-pressed="true">Русский</button>
+            <button class="language" type="button" data-language="en" aria-pressed="false">English</button>
           </div>
 
           <div class="listener-actions">
@@ -64,6 +61,7 @@
             <strong id="latestReference"></strong>
             <p id="latestSource"></p>
           </div>
+          <button id="reportFeedbackButton" class="report-button" type="button">Report a missed or wrong verse</button>
         </section>
 
         <section class="transcript-section" aria-labelledby="transcriptLabel">
@@ -73,7 +71,20 @@
           </div>
         </section>
 
-        <section id="excerptFolder" class="excerpt-folder">
+        <section id="reportsFolder" class="folder-section">
+          <button id="reportsFolderButton" class="folder-button" type="button" aria-expanded="false">
+            <span class="folder-icon" aria-hidden="true">📝</span>
+            <span class="folder-title">Saved feedback</span>
+            <span id="reportsCount" class="folder-count">0</span>
+            <span class="chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div id="reportsFolderContent" class="folder-content" hidden>
+            <div id="reportsList" class="reports-list"><p class="empty-line">No saved reports.</p></div>
+            <p class="test-note">Send opens a GitHub issue Codex can access from your computer.</p>
+          </div>
+        </section>
+
+        <section id="excerptFolder" class="folder-section">
           <button id="folderButton" class="folder-button" type="button" aria-expanded="false">
             <span class="folder-icon" aria-hidden="true">📁</span>
             <span class="folder-title">Test excerpts</span>
@@ -83,26 +94,70 @@
           <div id="folderContent" class="folder-content" hidden>
             <div class="mode-switch" role="group" aria-label="Excerpt playback mode">
               <button class="mode active" type="button" data-mode="direct" aria-pressed="true">🔇 Direct</button>
-              <button class="mode" type="button" data-mode="audible" aria-pressed="false">🔊 Audible</button>
+              <button class="mode" type="button" data-mode="audible" aria-pressed="false">🔊 Speaker</button>
             </div>
             <div id="excerptList" class="excerpt-list"></div>
-            <p class="test-note">Tests use verified sermon transcripts. Start Listening tests the live microphone.</p>
+            <p id="testNote" class="test-note">Direct runs the parser. Speaker also plays the sermon excerpt.</p>
           </div>
         </section>
       </article>
     </section>
   </main>
 
-  <dialog id="installDialog" class="install-dialog">
-    <button id="closeInstallButton" class="dialog-close" type="button" aria-label="Close">×</button>
-    <div class="dialog-icon">⇩</div>
-    <h2>Install the listener</h2>
+  <dialog id="feedbackDialog" class="app-dialog feedback-dialog">
+    <button id="closeFeedbackButton" class="dialog-close" type="button" aria-label="Close">×</button>
+    <div class="dialog-icon">📝</div>
+    <h2>Report detector feedback</h2>
+    <p>Capture what happened and optionally include the recent microphone audio.</p>
+    <form id="feedbackForm">
+      <label class="field-label" for="feedbackKind">What happened?</label>
+      <select id="feedbackKind" class="field-control">
+        <option value="missed">A verse was missed</option>
+        <option value="wrong">The wrong verse was caught</option>
+        <option value="other">Something else</option>
+      </select>
+
+      <label class="field-label" for="feedbackExpected">What was said / expected? <span>optional</span></label>
+      <textarea id="feedbackExpected" class="field-control" rows="2" placeholder="Example: Matthew chapter 19, verse 20"></textarea>
+
+      <label class="field-label" for="feedbackCaught">What did the app catch? <span>optional</span></label>
+      <input id="feedbackCaught" class="field-control" type="text" placeholder="Example: Mark 19:20" />
+
+      <label class="field-label" for="feedbackDuration">Include recent audio</label>
+      <select id="feedbackDuration" class="field-control">
+        <option value="15" selected>Last 15 seconds</option>
+        <option value="30">Last 30 seconds</option>
+        <option value="45">Last 45 seconds</option>
+        <option value="60">Last 60 seconds</option>
+      </select>
+
+      <label class="field-label" for="feedbackNote">Note <span>optional</span></label>
+      <textarea id="feedbackNote" class="field-control" rows="2" placeholder="Anything else that would help reproduce it"></textarea>
+
+      <div class="feedback-preview">
+        <strong>Recent transcript</strong>
+        <p id="feedbackTranscriptPreview">No transcript captured yet.</p>
+      </div>
+      <p id="feedbackStatus" class="dialog-status" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button id="saveFeedbackButton" class="dialog-secondary" type="submit" value="save">Save on this device</button>
+        <button id="sendFeedbackButton" class="dialog-primary" type="submit" value="send">Send to Codex</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="moreDialog" class="app-dialog">
+    <button id="closeMoreButton" class="dialog-close" type="button" aria-label="Close">×</button>
+    <div class="dialog-icon">•••</div>
+    <h2>More</h2>
     <p id="installInstructions">Use your browser menu to add this app to your Home Screen.</p>
     <button id="nativeInstallButton" class="dialog-primary" type="button" hidden>Install app</button>
-    <a class="dialog-download" href="https://github.com/skiIlI/russian-verse-live/releases/latest/download/russian-verse-live.zip">Download app files</a>
+    <button id="downloadSourceButton" class="dialog-secondary wide" type="button">Download current source context</button>
+    <a class="dialog-link" href="https://github.com/skiIlI/russian-verse-live" target="_blank" rel="noreferrer">Open GitHub repository</a>
+    <p id="sourceDownloadStatus" class="dialog-status" aria-live="polite"></p>
   </dialog>
 
   <noscript>This listener requires JavaScript.</noscript>
-  <script type="module" src="app.js?v=2"></script>
+  <script type="module" src="app.js?v=3"></script>
 </body>
 </html>
