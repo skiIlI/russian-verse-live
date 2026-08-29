@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
   <main class="app-shell">
@@ -66,7 +66,7 @@
 
         <section class="transcript-section" aria-labelledby="transcriptLabel">
           <h3 id="transcriptLabel">Live transcript</h3>
-          <div id="transcriptList" class="transcript-list">
+          <div id="transcriptList" class="transcript-list" aria-live="polite" aria-label="Live speech transcript">
             <p class="empty-line">No transcript yet.</p>
           </div>
         </section>
@@ -158,6 +158,6 @@
   </dialog>
 
   <noscript>This listener requires JavaScript.</noscript>
-  <script type="module" src="app.js?v=3"></script>
+  <script type="module" src="app.js?v=4"></script>
 </body>
 </html>

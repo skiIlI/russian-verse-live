@@ -1,10 +1,10 @@
-import { BibleVerseReferenceDetector } from "./parser.js?v=3";
-import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=3";
-import { configureFeedbackUI } from "./feedback-ui.js?v=3";
-import { downloadCurrentSourceContext } from "./source-context.js?v=3";
-import { EXCERPTS } from "./excerpts.js?v=3";
+import { BibleVerseReferenceDetector } from "./parser.js?v=4";
+import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=4";
+import { configureFeedbackUI } from "./feedback-ui.js?v=4";
+import { downloadCurrentSourceContext } from "./source-context.js?v=4";
+import { EXCERPTS } from "./excerpts.js?v=4";
 
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.0.1";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const LANGUAGE = {
   ru: { recognition: "ru-RU", name: "Russian", ready: "Ready to listen for Russian Bible references." },
@@ -37,6 +37,7 @@ let activeTestId = null;
 let activeAudio = null;
 let activeSpeech = null;
 let transcriptHistory = [];
+let interimTranscript = "";
 let latestDetected = null;
 let wakeLock = null;
 let installPrompt = null;
@@ -76,12 +77,19 @@ function renderContext() {
 
 function renderTranscripts() {
   elements.transcriptList.replaceChildren();
-  if (transcriptHistory.length === 0) {
+  if (!interimTranscript && transcriptHistory.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-line";
     empty.textContent = "No transcript yet.";
     elements.transcriptList.append(empty);
     return;
+  }
+  if (interimTranscript) {
+    const live = document.createElement("p");
+    live.className = "transcript-line interim";
+    live.lang = language;
+    live.textContent = interimTranscript;
+    elements.transcriptList.append(live);
   }
   for (const entry of transcriptHistory.slice(0, 8)) {
     const line = document.createElement("p");
@@ -95,6 +103,7 @@ function renderTranscripts() {
 function resetSessionView() {
   detector.reset();
   transcriptHistory = [];
+  interimTranscript = "";
   latestDetected = null;
   renderContext();
   renderTranscripts();
@@ -157,10 +166,16 @@ function configureRecognition() {
   };
 
   recognition.onresult = (event) => {
+    const finalLines = [];
+    const liveLines = [];
     for (let index = event.resultIndex; index < event.results.length; index += 1) {
       const result = event.results[index];
-      if (result.isFinal) consumeTranscript(result[0]?.transcript ?? "");
+      const text = result[0]?.transcript ?? "";
+      (result.isFinal ? finalLines : liveLines).push(text);
     }
+    for (const text of finalLines) consumeTranscript(text);
+    interimTranscript = liveLines.join(" ").trim();
+    renderTranscripts();
   };
 
   recognition.onerror = (event) => {
@@ -376,7 +391,9 @@ async function createFeedbackReport({ kind, expected, caught, note, requestedAud
     actualAudioSeconds,
     context: detector.readContext(),
     latestReference: latestDetected,
-    transcripts: transcriptHistory,
+    transcripts: interimTranscript
+      ? [{ text: interimTranscript, at: new Date().toISOString(), interim: true }, ...transcriptHistory]
+      : transcriptHistory,
     browser: navigator.userAgent,
     audioBlob: rollingAudio.createWav(requestedAudioSeconds),
   };
@@ -430,7 +447,7 @@ const feedbackUI = configureFeedbackUI({
   createReport: createFeedbackReport,
   readPreview: () => ({
     caught: latestDetected?.canonical ?? "",
-    transcript: transcriptHistory.map((entry) => entry.text).join("\n"),
+    transcript: [interimTranscript, ...transcriptHistory.map((entry) => entry.text)].filter(Boolean).join("\n"),
     audioSeconds: rollingAudio.availableSeconds,
   }),
 });

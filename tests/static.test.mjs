@@ -26,11 +26,13 @@ assert.match(html, /Last 15 seconds/);
 assert.match(html, /Last 60 seconds/);
 assert.match(html, /Download current source context/);
 assert.doesNotMatch(html, /Download app files|russian-verse-live\.zip|Automation Core/);
-assert.match(html, /app\.js\?v=3/);
-assert.match(app, /parser\.js\?v=3/);
+assert.match(html, /app\.js\?v=4/);
+assert.match(html, /aria-label="Live speech transcript"/);
+assert.match(app, /parser\.js\?v=4/);
 assert.match(app, /ru-RU/);
 assert.match(app, /en-US/);
 assert.match(app, /recognition\.continuous = true/);
+assert.match(app, /interimTranscript = liveLines/);
 assert.match(app, /navigator\.vibrate/);
 assert.match(app, /request\("screen"\)/);
 assert.match(app, /configureFeedbackUI/);
@@ -51,10 +53,10 @@ assert.match(styles, /--rose: #e11d48/);
 
 const manifest = JSON.parse(manifestText);
 assert.equal(manifest.display, "standalone");
-assert.equal(manifest.start_url, "./?v=3");
-assert.match(worker, /verse-listener-v3/);
-assert.match(worker, /audio-worklet\.js\?v=3/);
-assert.match(worker, /feedback-ui\.js\?v=3/);
+assert.equal(manifest.start_url, "./?v=4");
+assert.match(worker, /verse-listener-v4/);
+assert.match(worker, /audio-worklet\.js\?v=4/);
+assert.match(worker, /feedback-ui\.js\?v=4/);
 assert.match(worker, /fetch\(event\.request\)/);
 
 const audioFiles = [
