@@ -14,7 +14,7 @@ const BOOKS = [
   { id: "1-kings", book: "3 \u0426\u0430\u0440\u0441\u0442\u0432", canonicalBook: "1 Kings", aliases: ["\u0442\u0440\u0435\u0442\u044C\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "\u0442\u0440\u0435\u0442\u044C\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "3 \u0446\u0430\u0440\u0441\u0442\u0432"] },
   { id: "2-kings", book: "4 \u0426\u0430\u0440\u0441\u0442\u0432", canonicalBook: "2 Kings", aliases: ["\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u0430\u044F \u0446\u0430\u0440\u0441\u0442\u0432", "\u0447\u0435\u0442\u0432\u0435\u0440\u0442\u043E\u0435 \u0446\u0430\u0440\u0441\u0442\u0432", "4 \u0446\u0430\u0440\u0441\u0442\u0432"] },
   { id: "job", book: "\u0418\u043E\u0432", canonicalBook: "Job", aliases: ["\u0438\u043E\u0432\u0430", "\u0438\u043E\u0432"] },
-  { id: "psalms", book: "\u041F\u0441\u0430\u043B\u043E\u043C", canonicalBook: "Psalms", aliases: ["\u043F\u0441\u0430\u043B\u0442\u0438\u0440\u044C", "\u043F\u0441\u0430\u043B\u0442\u044B\u0440\u044C", "\u043F\u0441\u0430\u043B\u043E\u043C", "\u043F\u0441\u0430\u043B\u043C\u0430", "\u043F\u0441\u0430\u043B\u043C\u0435"] },
+  { id: "psalms", book: "\u041F\u0441\u0430\u043B\u043E\u043C", canonicalBook: "Psalms", aliases: ["\u043F\u0441\u0430\u043B\u0442\u0438\u0440\u044C", "\u043F\u0441\u0430\u043B\u0442\u044B\u0440\u044C", "\u043F\u0441\u0430\u043B\u043E\u043C", "\u043F\u0441\u0430\u043B\u043C\u0430", "\u043F\u0441\u0430\u043B\u043C\u0435", "\u043F\u0441\u0430\u043B\u043C\u044B", "\u043F\u0441\u0430\u043B\u043C\u043E\u0432", "\u043F\u0441\u0430\u043B\u043C\u0430\u0445"] },
   { id: "proverbs", book: "\u041F\u0440\u0438\u0442\u0447\u0438", canonicalBook: "Proverbs", aliases: ["\u043F\u0440\u0438\u0442\u0447\u0438", "\u043F\u0440\u0438\u0442\u0447\u0435\u0439"] },
   { id: "ecclesiastes", book: "\u0415\u043A\u043A\u043B\u0435\u0441\u0438\u0430\u0441\u0442", canonicalBook: "Ecclesiastes", aliases: ["\u0435\u043A\u043A\u043B\u0435\u0441\u0438\u0430\u0441\u0442\u0430", "\u0435\u043A\u043A\u043B\u0435\u0441\u0438\u0430\u0441\u0442", "\u044D\u043A\u043A\u043B\u0435\u0437\u0438\u0430\u0441\u0442"] },
   { id: "song", book: "\u041F\u0435\u0441\u043D\u044C \u041F\u0435\u0441\u043D\u0435\u0439", canonicalBook: "Song of Solomon", aliases: ["\u043F\u0435\u0441\u043D\u044C \u043F\u0435\u0441\u043D\u0435\u0439", "\u043F\u0435\u0441\u043D\u0438 \u043F\u0435\u0441\u043D\u0435\u0439"] },
@@ -31,7 +31,7 @@ const BOOKS = [
   { id: "habakkuk", book: "\u0410\u0432\u0432\u0430\u043A\u0443\u043C", canonicalBook: "Habakkuk", aliases: ["\u0430\u0432\u0432\u0430\u043A\u0443\u043C\u0430", "\u0430\u0432\u0432\u0430\u043A\u0443\u043C"] },
   { id: "zechariah", book: "\u0417\u0430\u0445\u0430\u0440\u0438\u044F", canonicalBook: "Zechariah", aliases: ["\u0437\u0430\u0445\u0430\u0440\u0438\u0438", "\u0437\u0430\u0445\u0430\u0440\u0438\u044F"] },
   { id: "malachi", book: "\u041C\u0430\u043B\u0430\u0445\u0438\u044F", canonicalBook: "Malachi", aliases: ["\u043C\u0430\u043B\u0430\u0445\u0438\u0438", "\u043C\u0430\u043B\u0430\u0445\u0438\u044F"], verseOnlyChapter: 4 },
-  { id: "matthew", book: "\u041E\u0442 \u041C\u0430\u0442\u0444\u0435\u044F", canonicalBook: "Matthew", aliases: ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0442\u0444\u0435\u044F", "\u043E\u0442 \u043C\u0430\u0442\u0444\u0435\u044F", "\u043C\u0430\u0442\u0444\u0435\u044F", "\u043C\u0430\u0442\u0444\u0435\u0439"] },
+  { id: "matthew", book: "\u041E\u0442 \u041C\u0430\u0442\u0444\u0435\u044F", canonicalBook: "Matthew", aliases: ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0442\u0444\u0435\u044F", "\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0442\u0432\u0435\u044F", "\u043E\u0442 \u043C\u0430\u0442\u0444\u0435\u044F", "\u043E\u0442 \u043C\u0430\u0442\u0432\u0435\u044F", "\u043C\u0430\u0442\u0444\u0435\u044F", "\u043C\u0430\u0442\u0444\u0435\u044E", "\u043C\u0430\u0442\u0444\u0435\u0439", "\u043C\u0430\u0442\u0432\u0435\u044F", "\u043C\u0430\u0442\u0432\u0435\u044E", "\u043C\u0430\u0442\u0432\u0435\u0439", "\u043C\u0430\u0442\u0435\u044F"] },
   { id: "mark", book: "\u041E\u0442 \u041C\u0430\u0440\u043A\u0430", canonicalBook: "Mark", aliases: ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043C\u0430\u0440\u043A\u0430", "\u043E\u0442 \u043C\u0430\u0440\u043A\u0430", "\u043C\u0430\u0440\u043A\u0430", "\u043C\u0430\u0440\u043A"] },
   { id: "luke", book: "\u041E\u0442 \u041B\u0443\u043A\u0438", canonicalBook: "Luke", aliases: ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u043B\u0443\u043A\u0438", "\u043E\u0442 \u043B\u0443\u043A\u0438", "\u043B\u0443\u043A\u043E\u0439", "\u043B\u0443\u043A\u0438", "\u043B\u0443\u043A\u0430"] },
   { id: "john", book: "\u041E\u0442 \u0418\u043E\u0430\u043D\u043D\u0430", canonicalBook: "John", aliases: ["\u0435\u0432\u0430\u043D\u0433\u0435\u043B\u0438\u0435 \u043E\u0442 \u0438\u043E\u0430\u043D\u043D\u0430", "\u043E\u0442 \u0438\u043E\u0430\u043D\u043D\u0430", "\u0438\u043E\u0430\u043D\u043D\u0430", "\u0438\u043E\u0430\u043D\u043D"] },
@@ -109,6 +109,7 @@ function sumNumberValues(values) {
 function parseTrailingNumber(words) {
   const values = [];
   for (let index = words.length - 1; index >= Math.max(0, words.length - 5); index -= 1) {
+    if (/^\d{1,3}$/.test(words[index])) return Number(words[index]);
     const value = tokenNumber(words[index]);
     if (value === null) {
       if (values.length > 0) break;
@@ -122,6 +123,7 @@ function parseLeadingNumber(words) {
   const values = [];
   const fillers = /* @__PURE__ */ new Set(["\u043D\u043E\u043C\u0435\u0440", "\u044D\u0442\u043E", "\u0441", "\u0441\u043E"]);
   for (const word of words.slice(0, 5)) {
+    if (/^\d{1,3}$/.test(word)) return Number(word);
     const value = tokenNumber(word);
     if (value === null) {
       if (values.length > 0) break;
@@ -155,18 +157,81 @@ function verseRangeNearLabel(text) {
   const verseStart = parseTrailingNumber(before) ?? numberNearLabel(text, /стих(?:а|е|и|ов|ом)?/);
   return verseStart ? { verseStart } : null;
 }
+function isWordCharacter(character) {
+  return Boolean(character && /[а-яa-z0-9]/.test(character));
+}
+function hasTokenBoundaries(text, index, length) {
+  return !isWordCharacter(text[index - 1]) && !isWordCharacter(text[index + length]);
+}
+function levenshteinDistance(left, right) {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const substitution = previous[rightIndex - 1] + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1);
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        substitution
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+  return previous[right.length];
+}
+function tokenSpans(text) {
+  return [...text.matchAll(/[а-яa-z0-9]+/g)].map((match) => ({
+    value: match[0],
+    index: match.index ?? 0,
+    end: (match.index ?? 0) + match[0].length
+  }));
+}
+function allowsFuzzyBookMatch(text) {
+  return /\d{1,3}\s*[:.]\s*\d{1,3}|глав(?:а|ы|е|у|ой|ою)|стих(?:а|е|и|ов|ом)?|имел[аи]?\s+в\s+виду|имею\s+в\s+виду|поправлюсь|точнее|вернее/.test(text);
+}
 function findBook(text) {
-  let best = null;
+  const candidates = [];
   for (const book of BOOKS) {
     for (const alias of book.aliases) {
-      const index = text.lastIndexOf(alias);
-      if (index < 0) continue;
-      if (!best || alias.length > best.length || index > best.index) {
-        best = { ...book, index, length: alias.length };
+      let index = text.indexOf(alias);
+      while (index >= 0) {
+        if (hasTokenBoundaries(text, index, alias.length)) {
+          candidates.push({ ...book, index, length: alias.length, matchKind: "exact", distance: 0 });
+        }
+        index = text.indexOf(alias, index + 1);
       }
     }
   }
-  return best;
+  if (allowsFuzzyBookMatch(text)) {
+    const spans = tokenSpans(text);
+    for (const book of BOOKS) {
+      for (const alias of book.aliases) {
+        const aliasWords = tokens(alias);
+        const compactAlias = aliasWords.join(" ");
+        if (compactAlias.length < 5) continue;
+        for (let index = 0; index <= spans.length - aliasWords.length; index += 1) {
+          const window = spans.slice(index, index + aliasWords.length);
+          const observed = window.map((span) => span.value).join(" ");
+          const maximumDistance = compactAlias.length >= 9 ? 2 : 1;
+          const distance = levenshteinDistance(observed, compactAlias);
+          if (distance < 1 || distance > maximumDistance) continue;
+          candidates.push({
+            ...book,
+            index: window[0].index,
+            length: window.at(-1).end - window[0].index,
+            matchKind: "fuzzy",
+            distance
+          });
+        }
+      }
+    }
+  }
+  return candidates.sort((left, right) => right.index - left.index || left.distance - right.distance || Number(left.matchKind === "exact") - Number(right.matchKind === "exact") || right.length - left.length)[0] ?? null;
+}
+function isNegatedCorrection(text, book) {
+  const before = text.slice(Math.max(0, book.index - 12), book.index);
+  const correctionCue = /имел[аи]?\s+в\s+виду|имею\s+в\s+виду|поправлюсь|точнее|вернее|(?:^|\s)не\s/.test(text);
+  return correctionCue && /(?:^|\s)не\s*$/.test(before);
 }
 function explicitReference(text, book) {
   const searchText = book ? text.slice(book.index + book.length, book.index + book.length + 90) : text;
@@ -210,8 +275,14 @@ class RussianVerseReferenceDetector {
     const text = normalize(sourceText);
     if (!text) return [];
     this.readContext(now);
-    const bookMatch = findBook(text);
+    let bookMatch = findBook(text);
     const previousBook = this.contextBook;
+    if (bookMatch && isNegatedCorrection(text, bookMatch)) {
+      this.contextBook = null;
+      this.contextChapter = null;
+      this.contextUpdatedAt = 0;
+      bookMatch = null;
+    }
     if (bookMatch) {
       this.contextBook = bookMatch;
       if (previousBook?.id !== bookMatch.id) this.contextChapter = null;
@@ -221,7 +292,7 @@ class RussianVerseReferenceDetector {
     const spokenVerses = exact ? null : verseRangeNearLabel(text);
     const verseStart = exact?.verseStart ?? spokenVerses?.verseStart ?? null;
     const verseEnd = exact?.verseEnd ?? spokenVerses?.verseEnd;
-    const chapter = exact?.chapter ?? numberNearLabel(text, /глав(?:а|ы|е|у|ой|ою)/) ?? (verseStart ? this.contextBook?.verseOnlyChapter ?? null : null);
+    const chapter = exact?.chapter ?? numberNearLabel(text, /глав(?:а|ы|е|у|ой|ою)/) ?? (this.contextBook?.id === "psalms" ? numberNearLabel(text, /псал(?:ом|ма|ме|мы|мов|мах|тирь|тырь)/) : null) ?? (verseStart ? this.contextBook?.verseOnlyChapter ?? null : null);
     if (chapter && chapter <= 150) {
       this.contextChapter = chapter;
       this.contextUpdatedAt = now;

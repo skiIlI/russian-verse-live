@@ -44,4 +44,39 @@ assert.deepEqual(switchedBook.consume("Восьмой стих.", startedAt + 2_
 assert.deepEqual(switchedBook.consume("Четырнадцатая глава.", startedAt + 3_000), []);
 assert.equal(switchedBook.consume("Восьмой стих.", startedAt + 4_000)[0]?.canonical, "Matthew 14:8");
 
-console.log("Parser: 10 stateful Russian reference scenarios passed");
+const asrBookSwitch = new RussianVerseReferenceDetector();
+assert.equal(asrBookSwitch.consume("Марка 10:13", startedAt)[0]?.canonical, "Mark 10:13");
+assert.equal(asrBookSwitch.consume("Матвея 19:20", startedAt + 1_000)[0]?.canonical, "Matthew 19:20");
+
+const spokenCorrection = new RussianVerseReferenceDetector();
+assert.equal(spokenCorrection.consume("Марка 10:13", startedAt)[0]?.canonical, "Mark 10:13");
+assert.deepEqual(spokenCorrection.consume("Ой, братья, я имел в виду Псалмы.", startedAt + 1_000), []);
+assert.equal(spokenCorrection.readContext(startedAt + 1_000).canonicalBook, "Psalms");
+assert.equal(spokenCorrection.readContext(startedAt + 1_000).chapter, null);
+assert.equal(
+  spokenCorrection.consume("Девятнадцатый псалом, шестой стих.", startedAt + 2_000)[0]?.canonical,
+  "Psalms 19:6",
+);
+
+const explicitCorrection = new RussianVerseReferenceDetector();
+assert.equal(explicitCorrection.consume("Марка 10:13", startedAt)[0]?.canonical, "Mark 10:13");
+assert.equal(
+  explicitCorrection.consume("Нет, не Марка, а Матвея 19:20.", startedAt + 1_000)[0]?.canonical,
+  "Matthew 19:20",
+);
+
+const fuzzyAsrSwitch = new RussianVerseReferenceDetector();
+assert.equal(fuzzyAsrSwitch.consume("Марка 10:13", startedAt)[0]?.canonical, "Mark 10:13");
+assert.equal(fuzzyAsrSwitch.consume("Матфеья 19:20", startedAt + 1_000)[0]?.canonical, "Matthew 19:20");
+
+const contextualDigits = new RussianVerseReferenceDetector();
+assert.equal(contextualDigits.consume("Марка 10:13", startedAt)[0]?.canonical, "Mark 10:13");
+assert.equal(contextualDigits.consume("Теперь 19:20.", startedAt + 1_000)[0]?.canonical, "Mark 19:20");
+
+const cancelledBook = new RussianVerseReferenceDetector();
+assert.equal(cancelledBook.consume("Марка 10:13", startedAt)[0]?.canonical, "Mark 10:13");
+assert.deepEqual(cancelledBook.consume("Нет, братья, не Марка.", startedAt + 1_000), []);
+assert.equal(cancelledBook.readContext(startedAt + 1_000).canonicalBook, null);
+assert.deepEqual(cancelledBook.consume("19:20", startedAt + 2_000), []);
+
+console.log("Parser: 16 stateful Russian reference scenarios passed");

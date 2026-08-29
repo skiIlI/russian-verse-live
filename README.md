@@ -9,7 +9,7 @@ An installable, completely free web version of Automation Core's Miscellaneous �
 3. Keep the page visible while the sermon is running.
 4. Use the download arrow to install it on your Home Screen.
 
-The detector remembers a spoken Bible book and chapter across later transcript segments, so a later verse number can complete the reference. Starting a new listening session clears the remembered context. Speaking a different book clears the previous chapter.
+The detector remembers a spoken Bible book and chapter across later transcript segments, so a later verse number can complete the reference. Starting a new listening session clears the remembered context. Speaking a different book clears the previous chapter. Common speech-recognition spellings such as `Матвея` are understood, and corrections such as `не Марка, а Матфея` or `я имел в виду Псалмы` replace the earlier context.
 
 ## Test excerpts
 

@@ -31,7 +31,12 @@ type BookDefinition = {
   verseOnlyChapter?: number;
 };
 
-type BookMatch = BookDefinition & { index: number; length: number };
+type BookMatch = BookDefinition & {
+  index: number;
+  length: number;
+  matchKind: "exact" | "fuzzy";
+  distance: number;
+};
 
 const CONTEXT_TTL_MS = 6 * 60 * 60 * 1000;
 const DUPLICATE_TTL_MS = 20 * 1000;
@@ -50,7 +55,7 @@ const BOOKS: BookDefinition[] = [
   { id: "1-kings", book: "3 Царств", canonicalBook: "1 Kings", aliases: ["третья царств", "третье царств", "3 царств"] },
   { id: "2-kings", book: "4 Царств", canonicalBook: "2 Kings", aliases: ["четвертая царств", "четвертое царств", "4 царств"] },
   { id: "job", book: "Иов", canonicalBook: "Job", aliases: ["иова", "иов"] },
-  { id: "psalms", book: "Псалом", canonicalBook: "Psalms", aliases: ["псалтирь", "псалтырь", "псалом", "псалма", "псалме"] },
+  { id: "psalms", book: "Псалом", canonicalBook: "Psalms", aliases: ["псалтирь", "псалтырь", "псалом", "псалма", "псалме", "псалмы", "псалмов", "псалмах"] },
   { id: "proverbs", book: "Притчи", canonicalBook: "Proverbs", aliases: ["притчи", "притчей"] },
   { id: "ecclesiastes", book: "Екклесиаст", canonicalBook: "Ecclesiastes", aliases: ["екклесиаста", "екклесиаст", "экклезиаст"] },
   { id: "song", book: "Песнь Песней", canonicalBook: "Song of Solomon", aliases: ["песнь песней", "песни песней"] },
@@ -67,7 +72,7 @@ const BOOKS: BookDefinition[] = [
   { id: "habakkuk", book: "Аввакум", canonicalBook: "Habakkuk", aliases: ["аввакума", "аввакум"] },
   { id: "zechariah", book: "Захария", canonicalBook: "Zechariah", aliases: ["захарии", "захария"] },
   { id: "malachi", book: "Малахия", canonicalBook: "Malachi", aliases: ["малахии", "малахия"], verseOnlyChapter: 4 },
-  { id: "matthew", book: "От Матфея", canonicalBook: "Matthew", aliases: ["евангелие от матфея", "от матфея", "матфея", "матфей"] },
+  { id: "matthew", book: "От Матфея", canonicalBook: "Matthew", aliases: ["евангелие от матфея", "евангелие от матвея", "от матфея", "от матвея", "матфея", "матфею", "матфей", "матвея", "матвею", "матвей", "матея"] },
   { id: "mark", book: "От Марка", canonicalBook: "Mark", aliases: ["евангелие от марка", "от марка", "марка", "марк"] },
   { id: "luke", book: "От Луки", canonicalBook: "Luke", aliases: ["евангелие от луки", "от луки", "лукой", "луки", "лука"] },
   { id: "john", book: "От Иоанна", canonicalBook: "John", aliases: ["евангелие от иоанна", "от иоанна", "иоанна", "иоанн"] },
@@ -153,6 +158,7 @@ function sumNumberValues(values: number[]): number | null {
 function parseTrailingNumber(words: string[]): number | null {
   const values: number[] = [];
   for (let index = words.length - 1; index >= Math.max(0, words.length - 5); index -= 1) {
+    if (/^\d{1,3}$/.test(words[index])) return Number(words[index]);
     const value = tokenNumber(words[index]);
     if (value === null) {
       if (values.length > 0) break;
@@ -167,6 +173,7 @@ function parseLeadingNumber(words: string[]): number | null {
   const values: number[] = [];
   const fillers = new Set(["номер", "это", "с", "со"]);
   for (const word of words.slice(0, 5)) {
+    if (/^\d{1,3}$/.test(word)) return Number(word);
     const value = tokenNumber(word);
     if (value === null) {
       if (values.length > 0) break;
@@ -203,18 +210,94 @@ function verseRangeNearLabel(text: string): { verseStart: number; verseEnd?: num
   return verseStart ? { verseStart } : null;
 }
 
+function isWordCharacter(character: string | undefined): boolean {
+  return Boolean(character && /[а-яa-z0-9]/.test(character));
+}
+
+function hasTokenBoundaries(text: string, index: number, length: number): boolean {
+  return !isWordCharacter(text[index - 1]) && !isWordCharacter(text[index + length]);
+}
+
+function levenshteinDistance(left: string, right: string): number {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const substitution = previous[rightIndex - 1] + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1);
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        substitution,
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+  return previous[right.length];
+}
+
+function tokenSpans(text: string): Array<{ value: string; index: number; end: number }> {
+  return [...text.matchAll(/[а-яa-z0-9]+/g)].map((match) => ({
+    value: match[0],
+    index: match.index ?? 0,
+    end: (match.index ?? 0) + match[0].length,
+  }));
+}
+
+function allowsFuzzyBookMatch(text: string): boolean {
+  return /\d{1,3}\s*[:.]\s*\d{1,3}|глав(?:а|ы|е|у|ой|ою)|стих(?:а|е|и|ов|ом)?|имел[аи]?\s+в\s+виду|имею\s+в\s+виду|поправлюсь|точнее|вернее/.test(text);
+}
+
 function findBook(text: string): BookMatch | null {
-  let best: BookMatch | null = null;
+  const candidates: BookMatch[] = [];
   for (const book of BOOKS) {
     for (const alias of book.aliases) {
-      const index = text.lastIndexOf(alias);
-      if (index < 0) continue;
-      if (!best || alias.length > best.length || index > best.index) {
-        best = { ...book, index, length: alias.length };
+      let index = text.indexOf(alias);
+      while (index >= 0) {
+        if (hasTokenBoundaries(text, index, alias.length)) {
+          candidates.push({ ...book, index, length: alias.length, matchKind: "exact", distance: 0 });
+        }
+        index = text.indexOf(alias, index + 1);
       }
     }
   }
-  return best;
+
+  if (allowsFuzzyBookMatch(text)) {
+    const spans = tokenSpans(text);
+    for (const book of BOOKS) {
+      for (const alias of book.aliases) {
+        const aliasWords = tokens(alias);
+        const compactAlias = aliasWords.join(" ");
+        if (compactAlias.length < 5) continue;
+        for (let index = 0; index <= spans.length - aliasWords.length; index += 1) {
+          const window = spans.slice(index, index + aliasWords.length);
+          const observed = window.map((span) => span.value).join(" ");
+          const maximumDistance = compactAlias.length >= 9 ? 2 : 1;
+          const distance = levenshteinDistance(observed, compactAlias);
+          if (distance < 1 || distance > maximumDistance) continue;
+          candidates.push({
+            ...book,
+            index: window[0].index,
+            length: window.at(-1)!.end - window[0].index,
+            matchKind: "fuzzy",
+            distance,
+          });
+        }
+      }
+    }
+  }
+
+  return candidates.sort((left, right) => (
+    right.index - left.index
+    || left.distance - right.distance
+    || Number(left.matchKind === "exact") - Number(right.matchKind === "exact")
+    || right.length - left.length
+  ))[0] ?? null;
+}
+
+function isNegatedCorrection(text: string, book: BookMatch): boolean {
+  const before = text.slice(Math.max(0, book.index - 12), book.index);
+  const correctionCue = /имел[аи]?\s+в\s+виду|имею\s+в\s+виду|поправлюсь|точнее|вернее|(?:^|\s)не\s/.test(text);
+  return correctionCue && /(?:^|\s)не\s*$/.test(before);
 }
 
 function explicitReference(text: string, book: BookMatch | null): { chapter: number; verseStart: number; verseEnd?: number } | null {
@@ -265,8 +348,14 @@ export class RussianVerseReferenceDetector {
     if (!text) return [];
     this.readContext(now);
 
-    const bookMatch = findBook(text);
+    let bookMatch = findBook(text);
     const previousBook = this.contextBook;
+    if (bookMatch && isNegatedCorrection(text, bookMatch)) {
+      this.contextBook = null;
+      this.contextChapter = null;
+      this.contextUpdatedAt = 0;
+      bookMatch = null;
+    }
     if (bookMatch) {
       this.contextBook = bookMatch;
       if (previousBook?.id !== bookMatch.id) this.contextChapter = null;
@@ -279,6 +368,9 @@ export class RussianVerseReferenceDetector {
     const verseEnd = exact?.verseEnd ?? spokenVerses?.verseEnd;
     const chapter = exact?.chapter
       ?? numberNearLabel(text, /глав(?:а|ы|е|у|ой|ою)/)
+      ?? (this.contextBook?.id === "psalms"
+        ? numberNearLabel(text, /псал(?:ом|ма|ме|мы|мов|мах|тирь|тырь)/)
+        : null)
       ?? (verseStart ? this.contextBook?.verseOnlyChapter ?? null : null);
 
     if (chapter && chapter <= 150) {

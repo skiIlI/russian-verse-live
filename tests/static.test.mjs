@@ -23,6 +23,8 @@ assert.match(app, /request\("screen"\)/);
 assert.match(styles, /--blue: #3b82f6/);
 assert.match(styles, /--rose: #e11d48/);
 assert.equal(JSON.parse(manifest).display, "standalone");
+assert.match(worker, /russian-verse-live-v2/);
+assert.match(worker, /fetch\(event\.request\)/);
 assert.match(worker, /assets\/luke-12-13\.wav/);
 
 const audioFiles = [
