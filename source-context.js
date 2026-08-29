@@ -7,6 +7,7 @@ const SOURCE_FILES = [
   "audio-ring-buffer.js",
   "audio-worklet.js",
   "feedback-store.js",
+  "feedback-api.js",
   "feedback-ui.js",
   "source-context.js",
   "src/bookDefinitions.ts",
@@ -17,6 +18,7 @@ const SOURCE_FILES = [
   "package.json",
   "tests/parser.test.mjs",
   "tests/audio-buffer.test.mjs",
+  "tests/feedback.test.mjs",
   "tests/static.test.mjs",
 ];
 

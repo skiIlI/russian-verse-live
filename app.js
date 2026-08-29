@@ -1,10 +1,10 @@
-import { BibleVerseReferenceDetector } from "./parser.js?v=4";
-import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=4";
-import { configureFeedbackUI } from "./feedback-ui.js?v=4";
-import { downloadCurrentSourceContext } from "./source-context.js?v=4";
-import { EXCERPTS } from "./excerpts.js?v=4";
+import { BibleVerseReferenceDetector } from "./parser.js?v=5";
+import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=5";
+import { configureFeedbackUI } from "./feedback-ui.js?v=5";
+import { downloadCurrentSourceContext } from "./source-context.js?v=5";
+import { EXCERPTS } from "./excerpts.js?v=5";
 
-const APP_VERSION = "2.0.1";
+const APP_VERSION = "2.1.0";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const LANGUAGE = {
   ru: { recognition: "ru-RU", name: "Russian", ready: "Ready to listen for Russian Bible references." },
@@ -14,10 +14,9 @@ const LANGUAGE = {
 const elements = Object.fromEntries([
   "listenerCard", "listenerIcon", "message", "phase", "startButton", "stopButton", "contextChip",
   "latestEmpty", "latestResult", "latestReference", "latestSource", "transcriptList", "excerptFolder",
-  "folderButton", "folderContent", "excerptList", "testNote", "reportsFolder", "reportsFolderButton",
-  "reportsFolderContent", "reportsList", "reportsCount", "reportFeedbackButton", "feedbackDialog",
+  "folderButton", "folderContent", "excerptList", "testNote", "reportFeedbackButton", "feedbackDeliveryStatus", "feedbackDialog",
   "closeFeedbackButton", "feedbackForm", "feedbackKind", "feedbackExpected", "feedbackCaught",
-  "feedbackDuration", "feedbackNote", "feedbackTranscriptPreview", "feedbackStatus", "moreButton",
+  "feedbackDuration", "feedbackNote", "feedbackTranscriptPreview", "feedbackStatus", "sendFeedbackButton", "moreButton",
   "moreDialog", "closeMoreButton", "installInstructions", "nativeInstallButton", "downloadSourceButton",
   "sourceDownloadStatus", "themeButton",
 ].map((id) => [id, document.querySelector(`#${id}`)]));
@@ -455,7 +454,6 @@ const feedbackUI = configureFeedbackUI({
 elements.startButton.addEventListener("click", () => void startListening());
 elements.stopButton.addEventListener("click", () => void stopListening());
 elements.folderButton.addEventListener("click", () => toggleFolder(elements.excerptFolder, elements.folderContent, elements.folderButton));
-elements.reportsFolderButton.addEventListener("click", () => toggleFolder(elements.reportsFolder, elements.reportsFolderContent, elements.reportsFolderButton));
 elements.moreButton.addEventListener("click", () => elements.moreDialog.showModal());
 elements.closeMoreButton.addEventListener("click", () => elements.moreDialog.close());
 for (const button of elements.languageButtons) button.addEventListener("click", () => setLanguage(button.dataset.language));
@@ -492,8 +490,8 @@ for (const button of elements.languageButtons) {
 }
 setMessage(LANGUAGE[language].ready);
 renderExcerpts();
-void feedbackUI.refresh();
+void feedbackUI.flush();
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=3").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=5").catch(() => {}));
 }

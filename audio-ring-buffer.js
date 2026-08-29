@@ -41,7 +41,7 @@ export class RollingAudioBuffer {
     this.silentGain.gain.value = 0;
 
     if (this.context.audioWorklet && window.AudioWorkletNode) {
-      await this.context.audioWorklet.addModule("./audio-worklet.js?v=3");
+      await this.context.audioWorklet.addModule("./audio-worklet.js?v=5");
       this.capture = new AudioWorkletNode(this.context, "rolling-audio-capture", {
         numberOfInputs: 1,
         numberOfOutputs: 1,

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
-const [html, app, styles, manifestText, worker, audio, feedback, feedbackUi, sourceContext, excerpts] = await Promise.all([
+const [html, app, styles, manifestText, worker, audio, feedback, feedbackApi, feedbackUi, sourceContext, excerpts] = await Promise.all([
   read("index.html"),
   read("app.js"),
   read("styles.css"),
@@ -13,6 +13,7 @@ const [html, app, styles, manifestText, worker, audio, feedback, feedbackUi, sou
   read("service-worker.js"),
   read("audio-ring-buffer.js"),
   read("feedback-store.js"),
+  read("feedback-api.js"),
   read("feedback-ui.js"),
   read("source-context.js"),
   read("excerpts.js"),
@@ -26,9 +27,9 @@ assert.match(html, /Last 15 seconds/);
 assert.match(html, /Last 60 seconds/);
 assert.match(html, /Download current source context/);
 assert.doesNotMatch(html, /Download app files|russian-verse-live\.zip|Automation Core/);
-assert.match(html, /app\.js\?v=4/);
+assert.match(html, /app\.js\?v=5/);
 assert.match(html, /aria-label="Live speech transcript"/);
-assert.match(app, /parser\.js\?v=4/);
+assert.match(app, /parser\.js\?v=5/);
 assert.match(app, /ru-RU/);
 assert.match(app, /en-US/);
 assert.match(app, /recognition\.continuous = true/);
@@ -40,10 +41,12 @@ assert.match(audio, /getUserMedia/);
 assert.match(audio, /createWav/);
 assert.match(audio, /maxSeconds = 60/);
 assert.match(feedback, /indexedDB\.open/);
-assert.match(feedback, /base64DataUrl/);
-assert.match(feedback, /issues\/new/);
+assert.doesNotMatch(feedback, /base64DataUrl|issues\/new/);
+assert.match(feedbackApi, /functions\/v1\/verse-feedback/);
+assert.match(feedbackApi, /flushFeedbackQueue/);
 assert.match(feedbackUi, /configureFeedbackUI/);
-assert.match(feedbackUi, /githubIssueUrl/);
+assert.match(feedbackUi, /Saved — will retry when connected/);
+assert.doesNotMatch(html, /Saved feedback|Send to Codex|Save on this device/);
 assert.match(sourceContext, /raw\.githubusercontent\.com/);
 assert.match(sourceContext, /verse-listener-source-context\.txt/);
 assert.match(sourceContext, /tests\/audio-buffer\.test\.mjs/);
@@ -53,10 +56,11 @@ assert.match(styles, /--rose: #e11d48/);
 
 const manifest = JSON.parse(manifestText);
 assert.equal(manifest.display, "standalone");
-assert.equal(manifest.start_url, "./?v=4");
-assert.match(worker, /verse-listener-v4/);
-assert.match(worker, /audio-worklet\.js\?v=4/);
-assert.match(worker, /feedback-ui\.js\?v=4/);
+assert.equal(manifest.start_url, "./?v=5");
+assert.match(worker, /verse-listener-v5/);
+assert.match(worker, /audio-worklet\.js\?v=5/);
+assert.match(worker, /feedback-api\.js\?v=5/);
+assert.match(worker, /feedback-ui\.js\?v=5/);
 assert.match(worker, /fetch\(event\.request\)/);
 
 const audioFiles = [
@@ -69,4 +73,4 @@ const audioFiles = [
 const assetsPath = fileURLToPath(new URL("assets/", root));
 await Promise.all(audioFiles.map((file) => access(join(assetsPath, file))));
 
-console.log("Web contract: bilingual PWA, rolling feedback, GitHub inbox, and current source export present");
+console.log("Web contract: bilingual PWA, rolling feedback, shared inbox, and current source export present");

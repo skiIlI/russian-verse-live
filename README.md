@@ -2,7 +2,7 @@
 
 A free, browser-only Bible reference listener for Russian and English sermons.
 
-[Open the live app](https://skiili.github.io/russian-verse-live/?v=4)
+[Open the live app](https://skiili.github.io/russian-verse-live/?v=5)
 
 ## Use it
 
@@ -17,7 +17,7 @@ The stateful detector remembers a book and chapter across later transcript segme
 
 The microphone keeps a rolling 60-second audio buffer in memory while listening. **Report a missed or wrong verse** saves the chosen last 15, 30, 45, or 60 seconds as WAV audio together with the language, transcript, detector context, expected verse, caught verse, and optional note.
 
-Reports are saved in IndexedDB on the current device. **Send to Codex** downloads one self-contained JSON report and opens a prefilled GitHub issue. Attach the downloaded JSON before submitting the issue when audio is available. The GitHub issue is the free cross-device inbox that Codex can read from the development computer; the publishable website contains no GitHub write token.
+Tap **Send feedback** once. The report goes to a private shared inbox that Codex can access from the development computer. If the device is offline or delivery fails, the complete report stays privately queued in IndexedDB and retries automatically when the page loads or reconnects. There is no account or sign-in step.
 
 ## Current source context
 
@@ -29,7 +29,7 @@ Russian mode contains five verified sermon excerpts. English mode contains five 
 
 ## Privacy and cost
 
-There is no paid API, analytics service, or private backend. Browser speech recognition availability and processing are controlled by the browser and may require an internet connection. Audio stays in memory until a report is saved, stays on the current device until exported, and reaches GitHub only when the user attaches the report and submits the issue. Detection uses vibration when supported and never plays a notification sound.
+There is no paid API or analytics service. Browser speech recognition availability and processing are controlled by the browser and may require an internet connection. Audio stays in memory until the user submits feedback. Submitted feedback uses the existing Voice Recorder App backend: metadata is private in Supabase and audio is private in Cloudflare R2. Failed deliveries stay on the current device until an automatic retry succeeds. Detection uses vibration when supported and never plays a notification sound.
 
 ## Development
 

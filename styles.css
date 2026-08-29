@@ -265,6 +265,9 @@ button { font: inherit; }
 
 .report-button:hover { background: var(--blue-soft); }
 .report-button:active { transform: scale(.99); }
+.feedback-delivery-status { margin: 1px 0 0; color: var(--blue-text); font-size: 9px; text-align: center; }
+.feedback-delivery-status[data-tone="sent"] { color: #15803d; }
+.feedback-delivery-status[data-tone="queued"] { color: var(--muted); }
 
 .transcript-list {
   max-height: 180px;
@@ -325,17 +328,6 @@ button { font: inherit; }
 .excerpt-time { flex: 0 0 auto; color: var(--faint); font-size: 9px; }
 .test-note { margin: 9px 2px 0; color: var(--faint); font-size: 9px; line-height: 14px; }
 
-.reports-list { display: grid; gap: 6px; }
-.report-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border-radius: 11px; padding: 9px 10px; background: var(--row); }
-.report-row-copy { min-width: 0; }
-.report-row-copy strong { display: block; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.report-row-copy span { display: block; margin-top: 3px; color: var(--faint); font-size: 8px; }
-.report-row-actions { display: flex; gap: 4px; }
-.mini-button { border: 0; border-radius: 8px; padding: 6px 7px; background: rgba(59,130,246,.1); color: var(--blue-text); font-size: 8px; font-weight: 750; cursor: pointer; }
-.mini-button:hover { background: rgba(59,130,246,.2); }
-.mini-button:active { transform: scale(.96); }
-.mini-button.delete { background: var(--rose-soft); color: var(--rose); }
-
 .listener-card.detected { animation: detectFlash 900ms ease-out; }
 
 .app-dialog {
@@ -361,15 +353,17 @@ button { font: inherit; }
 .dialog-secondary, .dialog-link { background: var(--row); color: var(--text); }
 .dialog-primary:hover, .dialog-secondary:hover, .dialog-link:hover { transform: translateY(-1px); }
 .dialog-primary:active, .dialog-secondary:active, .dialog-link:active { transform: scale(.98); }
-.dialog-secondary.wide, .dialog-link { width: 100%; margin-top: 8px; }
+.dialog-primary.wide, .dialog-secondary.wide, .dialog-link { width: 100%; margin-top: 8px; }
+.dialog-primary:disabled { cursor: wait; opacity: .55; transform: none; }
 .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
 
 .field-label { display: block; margin: 11px 2px 5px; font-size: 9px; font-weight: 750; }
 .field-label span { color: var(--faint); font-weight: 550; }
 .field-control { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; background: var(--row); color: var(--text); font: inherit; font-size: 10px; outline: none; resize: vertical; }
 .field-control:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
-.feedback-preview { margin-top: 12px; border-radius: 11px; padding: 10px; background: var(--row); }
-.feedback-preview strong { font-size: 9px; }
+.feedback-details { margin-top: 10px; border-radius: 11px; padding: 10px; background: var(--row); }
+.feedback-details summary { color: var(--muted); font-size: 9px; font-weight: 700; cursor: pointer; }
+.feedback-preview { margin-top: 8px; }
 .feedback-preview p { max-height: 70px; overflow-y: auto; margin: 5px 0 0; color: var(--muted); font-size: 9px; line-height: 14px; white-space: pre-wrap; }
 .dialog-status { min-height: 14px; margin: 9px 2px 0 !important; color: var(--blue-text) !important; font-size: 9px !important; line-height: 14px !important; }
 

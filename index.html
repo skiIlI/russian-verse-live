@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
   <main class="app-shell">
@@ -62,25 +62,13 @@
             <p id="latestSource"></p>
           </div>
           <button id="reportFeedbackButton" class="report-button" type="button">Report a missed or wrong verse</button>
+          <p id="feedbackDeliveryStatus" class="feedback-delivery-status" aria-live="polite" hidden></p>
         </section>
 
         <section class="transcript-section" aria-labelledby="transcriptLabel">
           <h3 id="transcriptLabel">Live transcript</h3>
           <div id="transcriptList" class="transcript-list" aria-live="polite" aria-label="Live speech transcript">
             <p class="empty-line">No transcript yet.</p>
-          </div>
-        </section>
-
-        <section id="reportsFolder" class="folder-section">
-          <button id="reportsFolderButton" class="folder-button" type="button" aria-expanded="false">
-            <span class="folder-icon" aria-hidden="true">📝</span>
-            <span class="folder-title">Saved feedback</span>
-            <span id="reportsCount" class="folder-count">0</span>
-            <span class="chevron" aria-hidden="true">⌄</span>
-          </button>
-          <div id="reportsFolderContent" class="folder-content" hidden>
-            <div id="reportsList" class="reports-list"><p class="empty-line">No saved reports.</p></div>
-            <p class="test-note">Send opens a GitHub issue Codex can access from your computer.</p>
           </div>
         </section>
 
@@ -108,7 +96,7 @@
     <button id="closeFeedbackButton" class="dialog-close" type="button" aria-label="Close">×</button>
     <div class="dialog-icon">📝</div>
     <h2>Report detector feedback</h2>
-    <p>Capture what happened and optionally include the recent microphone audio.</p>
+    <p>Send the recent transcript and up to 60 seconds of microphone audio.</p>
     <form id="feedbackForm">
       <label class="field-label" for="feedbackKind">What happened?</label>
       <select id="feedbackKind" class="field-control">
@@ -116,12 +104,6 @@
         <option value="wrong">The wrong verse was caught</option>
         <option value="other">Something else</option>
       </select>
-
-      <label class="field-label" for="feedbackExpected">What was said / expected? <span>optional</span></label>
-      <textarea id="feedbackExpected" class="field-control" rows="2" placeholder="Example: Matthew chapter 19, verse 20"></textarea>
-
-      <label class="field-label" for="feedbackCaught">What did the app catch? <span>optional</span></label>
-      <input id="feedbackCaught" class="field-control" type="text" placeholder="Example: Mark 19:20" />
 
       <label class="field-label" for="feedbackDuration">Include recent audio</label>
       <select id="feedbackDuration" class="field-control">
@@ -131,18 +113,22 @@
         <option value="60">Last 60 seconds</option>
       </select>
 
-      <label class="field-label" for="feedbackNote">Note <span>optional</span></label>
-      <textarea id="feedbackNote" class="field-control" rows="2" placeholder="Anything else that would help reproduce it"></textarea>
+      <details class="feedback-details">
+        <summary>Add an optional correction or note</summary>
+        <label class="field-label" for="feedbackExpected">What was said / expected?</label>
+        <textarea id="feedbackExpected" class="field-control" rows="2" placeholder="Example: Matthew chapter 19, verse 20"></textarea>
+        <label class="field-label" for="feedbackCaught">What did the app catch?</label>
+        <input id="feedbackCaught" class="field-control" type="text" placeholder="Example: Mark 19:20" />
+        <label class="field-label" for="feedbackNote">Anything else?</label>
+        <textarea id="feedbackNote" class="field-control" rows="2" placeholder="Optional note"></textarea>
+      </details>
 
-      <div class="feedback-preview">
-        <strong>Recent transcript</strong>
+      <details class="feedback-details feedback-preview">
+        <summary>View recent transcript</summary>
         <p id="feedbackTranscriptPreview">No transcript captured yet.</p>
-      </div>
+      </details>
       <p id="feedbackStatus" class="dialog-status" aria-live="polite"></p>
-      <div class="dialog-actions">
-        <button id="saveFeedbackButton" class="dialog-secondary" type="submit" value="save">Save on this device</button>
-        <button id="sendFeedbackButton" class="dialog-primary" type="submit" value="send">Send to Codex</button>
-      </div>
+      <button id="sendFeedbackButton" class="dialog-primary wide" type="submit">Send feedback</button>
     </form>
   </dialog>
 
@@ -158,6 +144,6 @@
   </dialog>
 
   <noscript>This listener requires JavaScript.</noscript>
-  <script type="module" src="app.js?v=4"></script>
+  <script type="module" src="app.js?v=5"></script>
 </body>
 </html>
