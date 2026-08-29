@@ -31,6 +31,8 @@ Russian mode contains five verified sermon excerpts. English mode contains five 
 
 There is no paid API or analytics service. Browser speech recognition availability and processing are controlled by the browser and may require an internet connection. Audio stays in memory until the user submits feedback. Submitted feedback uses the existing Voice Recorder App backend: metadata is private in Supabase and audio is private in Cloudflare R2. Failed deliveries stay on the current device until an automatic retry succeeds. Detection uses vibration when supported and never plays a notification sound.
 
+The isolated feedback table and Edge Function source live under `supabase/` in this repository. They reuse the recorder project's infrastructure without reading or changing recorder accounts, recordings, messages, or sharing data.
+
 ## Development
 
 The site has no runtime package dependencies. Compile the TypeScript parser, then run the deterministic parser and static contract checks:
