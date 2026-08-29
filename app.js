@@ -1,4 +1,4 @@
-import { RussianVerseReferenceDetector } from "./parser.js";
+import { RussianVerseReferenceDetector } from "./parser.js?v=2";
 
 const EXCERPTS = [
   {

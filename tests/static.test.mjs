@@ -16,6 +16,8 @@ const [html, app, styles, manifest, worker] = await Promise.all([
 assert.match(html, /Start Listening/);
 assert.match(html, /Test excerpts/);
 assert.match(html, /Download app files/);
+assert.match(html, /app\.js\?v=2/);
+assert.match(app, /parser\.js\?v=2/);
 assert.match(app, /recognition\.lang = "ru-RU"/);
 assert.match(app, /recognition\.continuous = true/);
 assert.match(app, /navigator\.vibrate/);
@@ -23,6 +25,7 @@ assert.match(app, /request\("screen"\)/);
 assert.match(styles, /--blue: #3b82f6/);
 assert.match(styles, /--rose: #e11d48/);
 assert.equal(JSON.parse(manifest).display, "standalone");
+assert.equal(JSON.parse(manifest).start_url, "./?v=2");
 assert.match(worker, /russian-verse-live-v2/);
 assert.match(worker, /fetch\(event\.request\)/);
 assert.match(worker, /assets\/luke-12-13\.wav/);
