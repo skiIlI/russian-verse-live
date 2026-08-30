@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body>
   <main class="app-shell">
@@ -44,6 +44,18 @@
             <button class="language active" type="button" data-language="ru" aria-pressed="true">Русский</button>
             <button class="language" type="button" data-language="en" aria-pressed="false">English</button>
           </div>
+
+          <label class="recognition-model-option" for="recognitionModel">
+            <span>Transcription model</span>
+            <select id="recognitionModel">
+              <option value="base" selected>Whisper Base · Recommended</option>
+              <option value="tiny">Whisper Tiny · Faster</option>
+              <option value="small">Whisper Small · Most accurate</option>
+              <option value="browser">Browser speech service · Fallback</option>
+            </select>
+            <small>Whisper runs locally after its first download and stays cached by your browser.</small>
+          </label>
+          <p id="recognitionModelStatus" class="model-status" aria-live="polite"></p>
 
           <div class="listener-actions">
             <button id="startButton" class="action start" type="button">Start Listening</button>
@@ -122,7 +134,65 @@
             <span class="chevron" aria-hidden="true">⌄</span>
           </button>
           <div id="transcriptLabContent" class="folder-content transcript-lab-content" hidden>
+            <aside id="serviceVideoReview" class="service-video-review" hidden>
+              <div class="service-video-heading">
+                <strong>August 16 service</strong>
+                <a id="serviceVideoLink" href="https://www.youtube.com/watch?v=Y5bbaQmyXKI" target="_blank" rel="noreferrer">Open YouTube</a>
+              </div>
+              <div class="service-video-frame">
+                <iframe id="serviceVideoFrame" title="August 16 service video" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+              </div>
+              <p id="serviceVideoStatus">Click any timestamp to seek and play this service.</p>
+            </aside>
             <p class="transcript-lab-intro">Paste a sermon transcript to detect references, quoted verses, and spoken or inferred next/back commands.</p>
+
+            <div class="youtube-import">
+              <label for="analysisYoutubeUrl">YouTube service link</label>
+              <div>
+                <input id="analysisYoutubeUrl" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" />
+                <button id="importYoutubeTranscript" type="button">Captions</button>
+              </div>
+              <div class="youtube-transcriber-actions">
+                <button id="startYoutubeTranscription" class="youtube-transcribe" type="button">▶ Play &amp; transcribe</button>
+                <button id="stopYoutubeTranscription" class="youtube-stop" type="button" hidden disabled>■ Stop</button>
+              </div>
+              <audio id="youtubeTranscriberAudio" class="youtube-transcriber-audio" controls playsinline preload="none" hidden></audio>
+              <small>Captions imports YouTube text. Play &amp; transcribe tests the selected model against the actual audio while you hear it.</small>
+            </div>
+
+            <details id="transcriptionBenchmark" class="benchmark-panel">
+              <summary>Four-model transcription benchmark</summary>
+              <p>Compare one sermon selection against YouTube captions, hear the exact audio, annotate results, and export the complete report.</p>
+              <div class="benchmark-range">
+                <label>Start time<input id="benchmarkStart" type="text" inputmode="numeric" value="20:00" placeholder="20:00" /></label>
+                <label>Minutes<input id="benchmarkDuration" type="number" min="1" max="60" step="1" value="10" /></label>
+              </div>
+              <div class="benchmark-selection-actions">
+                <button id="benchmarkRandom" type="button">Shuffle sermon range</button>
+                <button id="benchmarkUsePosition" type="button">Use video position</button>
+                <button id="benchmarkPlay" type="button">▶ Hear selection</button>
+              </div>
+              <audio id="benchmarkAudio" controls playsinline preload="none" hidden></audio>
+              <fieldset id="benchmarkModels" class="benchmark-models">
+                <legend>Models to run</legend>
+                <label><input type="checkbox" value="tiny" checked />Tiny</label>
+                <label><input type="checkbox" value="base" checked />Base</label>
+                <label><input type="checkbox" value="small" checked />Small</label>
+                <label><input type="checkbox" value="browser" checked />Browser</label>
+              </fieldset>
+              <div class="benchmark-run-actions">
+                <button id="benchmarkRun" class="benchmark-run" type="button">Run selected models</button>
+                <button id="benchmarkStop" class="benchmark-stop" type="button" hidden>Stop</button>
+              </div>
+              <small>Whisper models run locally in a worker. The browser model runs in real time and plays the selected audio.</small>
+              <p id="benchmarkStatus" class="benchmark-status" aria-live="polite"></p>
+              <p id="benchmarkRecommendation" class="benchmark-recommendation"></p>
+              <div id="benchmarkResults" class="benchmark-results"></div>
+              <div class="benchmark-export-actions">
+                <button id="benchmarkExportText" type="button" disabled>Export TXT</button>
+                <button id="benchmarkExportJson" type="button" disabled>Export JSON</button>
+              </div>
+            </details>
 
             <div class="analysis-language-switch" role="group" aria-label="Transcript language">
               <button class="analysis-language active" type="button" data-analysis-language="ru" aria-pressed="true">Русский · Synodal</button>
@@ -151,13 +221,9 @@
                 <span><strong id="analysisUniqueCount">0</strong> unique</span>
               </div>
 
-              <div class="analysis-view-toolbar">
-                <div class="analysis-view-switch" role="tablist" aria-label="Output format">
-                  <button class="analysis-view active" type="button" role="tab" data-analysis-view="report" aria-selected="true">Report</button>
-                  <button class="analysis-view" type="button" role="tab" data-analysis-view="console" aria-selected="false">Console</button>
-                  <button class="analysis-view" type="button" role="tab" data-analysis-view="annotated" aria-selected="false">Annotated</button>
-                </div>
+              <div class="analysis-view-toolbar" aria-label="Timeline copy actions">
                 <button id="copyAnalysisOutput" class="analysis-copy" type="button">Copy</button>
+                <button id="copyCompleteAnalysis" class="analysis-copy analysis-copy-all" type="button" disabled>Copy all</button>
               </div>
               <div id="analysisOutput" class="analysis-output"></div>
             </div>
@@ -205,14 +271,14 @@
         <option value="60">Last 60 seconds</option>
       </select>
 
-      <details class="feedback-details">
-        <summary>Add an optional correction or note</summary>
+      <details id="feedbackCorrectionDetails" class="feedback-details">
+        <summary>Add a correction and explain what was wrong</summary>
         <label class="field-label" for="feedbackExpected">What was said / expected?</label>
         <textarea id="feedbackExpected" class="field-control" rows="2" placeholder="Example: Matthew chapter 19, verse 20"></textarea>
         <label class="field-label" for="feedbackCaught">What did the app catch?</label>
         <input id="feedbackCaught" class="field-control" type="text" placeholder="Example: Mark 19:20" />
-        <label class="field-label" for="feedbackNote">Anything else?</label>
-        <textarea id="feedbackNote" class="field-control" rows="2" placeholder="Optional note"></textarea>
+        <label class="field-label" for="feedbackNote">What was wrong?</label>
+        <textarea id="feedbackNote" class="field-control" rows="3" placeholder="Explain the misconception or what the detector should do instead"></textarea>
       </details>
 
       <details class="feedback-details feedback-preview">
@@ -236,6 +302,6 @@
   </dialog>
 
   <noscript>This listener requires JavaScript.</noscript>
-  <script type="module" src="app.js?v=8"></script>
+  <script type="module" src="app.js?v=11"></script>
 </body>
 </html>

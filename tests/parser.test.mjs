@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { BibleVerseReferenceDetector } from "../parser.js";
+import { BibleVerseReferenceDetector, BOOKS } from "../parser.js";
 
 function detect(language, parts) {
   const detector = new BibleVerseReferenceDetector(language);
@@ -54,6 +54,66 @@ assert.equal(explicitCorrection.consume("Нет, не Марка, а Матве�
 const fuzzyRussian = new BibleVerseReferenceDetector("ru");
 assert.equal(fuzzyRussian.consume("Марка 10:13", startedAt)[0]?.canonical, "Mark 10:13");
 assert.equal(fuzzyRussian.consume("Матфеья 19:20", startedAt + 1_000)[0]?.canonical, "Matthew 19:20");
+
+const asrInflection = new BibleVerseReferenceDetector("ru");
+assert.equal(
+  asrInflection.consume("Давайте прочитаем малахией последние два стишка: пятый и шестой стих.", startedAt)[0]?.canonical,
+  "Malachi 4:5–6",
+);
+
+const splitOrdinal = new BibleVerseReferenceDetector("ru");
+splitOrdinal.consume("Откроем Евангелие от Матфея, двадцать", startedAt);
+assert.equal(splitOrdinal.consume("четвертая глава, третий стих", startedAt + 1_000)[0]?.canonical, "Matthew 24:3");
+
+const splitEnglishOrdinal = new BibleVerseReferenceDetector("en");
+splitEnglishOrdinal.consume("Open the Gospel of Matthew chapter twenty", startedAt);
+assert.equal(splitEnglishOrdinal.consume("four verse three", startedAt + 1_000)[0]?.canonical, "Matthew 24:3");
+
+const splitVerseOrdinal = new BibleVerseReferenceDetector("ru");
+splitVerseOrdinal.consume("Первое послание Петра, третья глава, двадцать", startedAt);
+assert.equal(splitVerseOrdinal.consume("первый стих", startedAt + 1_000)[0]?.canonical, "1 Peter 3:21");
+
+const scriptureProse = new BibleVerseReferenceDetector("ru");
+scriptureProse.consume("прочитываем главу Священного Писания", startedAt);
+scriptureProse.consume("пятнадцатая глава", startedAt + 40_000);
+assert.equal(scriptureProse.readContext(startedAt + 40_000).bookId, null);
+
+const numberedFamily = new BibleVerseReferenceDetector("ru");
+numberedFamily.consume("Псалом двадцать второй", startedAt);
+numberedFamily.consume("Апостол Павел к Коринфянам в четвертой главе", startedAt + 1_000);
+assert.equal(numberedFamily.readContext(startedAt + 1_000).bookId, null);
+
+function singleAsrMutation(alias, language) {
+  const ignored = new Set(language === "ru"
+    ? ["книга", "к", "от", "послание", "евангелие"]
+    : ["book", "of", "the", "letter", "gospel", "according", "to"]);
+  const words = alias.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  const target = words
+    .filter((word) => !ignored.has(word) && /\p{L}/u.test(word))
+    .sort((left, right) => right.length - left.length)[0];
+  if (!target) return alias;
+  const index = Math.max(0, Math.floor(target.length / 2));
+  const replacement = target[index] === "а" ? "о" : target[index] === "a" ? "e" : "а";
+  return alias.replace(target, `${target.slice(0, index)}${replacement}${target.slice(index + 1)}`);
+}
+
+for (const language of ["ru", "en"]) {
+  for (const book of BOOKS) {
+    const mutated = singleAsrMutation(book.names[language], language);
+    const detector = new BibleVerseReferenceDetector(language);
+    assert.equal(
+      detector.consume(`${mutated} 1:1`, startedAt)[0]?.bookId,
+      book.id,
+      `${language} ASR-tolerant matching should cover ${book.canonicalBook}: ${mutated}`,
+    );
+  }
+}
+
+const droppedConnector = new BibleVerseReferenceDetector("en");
+assert.equal(droppedConnector.consume("Song Solomon 2:1", startedAt)[0]?.canonical, "Song of Solomon 2:1");
+
+const ambiguousNoise = new BibleVerseReferenceDetector("ru");
+assert.deepEqual(ambiguousNoise.consume("Это стих пять о малом совете.", startedAt), []);
 
 const contextualRussianDigits = new BibleVerseReferenceDetector("ru");
 assert.equal(contextualRussianDigits.consume("Марка 10:13", startedAt)[0]?.canonical, "Mark 10:13");

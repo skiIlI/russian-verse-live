@@ -201,7 +201,7 @@ This guide combines the reusable working, safety, testing, browser-control, scre
 
 - When asked for architecture, provide 3 ranked options using 🥇 🥈 🥉.
 - Lead with a clear recommendation and a brief reason.
-- Give each option practical workflow, strengths, and tradeoffs in medium detail.
+- Default to one concise emoji bullet per option; expand details only when requested.
 - Include a compact flow only when it materially clarifies the decision.
 - Before applying a performance fix, explain the likely cause and smallest safe patch.
 
@@ -235,6 +235,8 @@ Rules:
 ## Codex final summary style
 
 - Use a `Summary` heading followed by 1-5 short emoji lines.
+- When the user asks for brevity, reply with emoji bullets only and omit explanatory paragraphs.
+- Put the direct recommendation or outcome first; default to one short sentence per bullet.
 - Make every line outcome-focused, distinct, and easy to scan.
 - Omit a Try section unless the user explicitly asks for testing steps.
 - Omit file paths, line numbers, changed-file lists, and internal implementation details unless requested.

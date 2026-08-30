@@ -122,6 +122,10 @@ function collectExplicit(
   const contexts: SegmentContext[] = [];
   let previousContext = "";
   let activeRange: { verseStart: number; verseEnd?: number } | null = null;
+  const labelCue = language === "ru" ? /глав\p{L}*|стих\p{L}*|текст\p{L}*/u : /chapters?|verses?/;
+  const danglingBookRelation = language === "ru"
+    ? /связан\p{L}*.{0,24}с\s+книг\p{L}*,\s+(?:[\p{L}-]+[,;\s]*){2,3}$/u
+    : /(?:connected|related).{0,24}(?:to|with)\s+(?:the\s+)?book(?:\s+of)?(?:\s+[a-z-]{1,14})?[,.;\s]*$/;
 
   for (const segment of segments) {
     const now = segmentMoment(segment);
@@ -130,7 +134,22 @@ function collectExplicit(
       contexts[segment.index] = { bookId: context.bookId, chapter: context.chapter };
       continue;
     }
-    const references = detector.consume(segment.text, now);
+    const prior = segments[segment.index - 1];
+    const hasDanglingRelation = Boolean(prior && labelCue.test(segment.text) && danglingBookRelation.test(prior.text));
+    if (hasDanglingRelation) detector.reset();
+    const nearbyPrior = prior
+      && !prior.isMusic
+      && !prior.isPrayer
+      && prior.startSeconds !== null
+      && segment.startSeconds !== null
+      && segment.startSeconds - prior.startSeconds <= 12
+      && prior.text.length <= 90
+      && !labelCue.test(prior.text)
+      && !hasDanglingRelation;
+    const parserText = nearbyPrior && labelCue.test(segment.text)
+      ? `${prior.text} ${segment.text}`
+      : segment.text;
+    const references = detector.consume(parserText, now);
     const context = detector.readContext(now);
     const contextKey = `${context.bookId ?? ""}:${context.chapter ?? ""}`;
     if (contextKey !== previousContext) activeRange = null;

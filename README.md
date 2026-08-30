@@ -2,7 +2,7 @@
 
 A free, browser-only Bible reference listener for Russian and English sermons.
 
-[Open the live app](https://skiili.github.io/russian-verse-live/?v=8)
+[Open the live app](https://skiili.github.io/russian-verse-live/?v=11)
 
 ## Use it
 
@@ -26,15 +26,24 @@ The stateful detector remembers a book and chapter across later transcript segme
 
 ## Interpret a sermon transcript
 
-Open **Transcript interpreter** to paste timestamped or plain transcript text. It produces three synchronized formats:
-
-- **Report** groups every verse reading and shows a chronological open/read/next/back timeline.
-- **Console** emits stable `OPEN_VERSE`, `VERSE_READ`, `NEXT_VERSE`, `PREVIOUS_VERSE`, `GO_TO_VERSE`, and `SET_CONTEXT` actions for future Words automation.
-- **Annotated** keeps the transcript in place and attaches detections to the source lines.
+Open **Transcript interpreter** to paste timestamped or plain transcript text. Its single chronological Action Timeline combines references, readings, next/back moves, and icon-only feedback controls. Long transcripts are split into collapsible sermon sections when there is a ten-minute gap.
 
 **Load Aug 16 service** loads the supplied YouTube transcript. The default sermon-focused option ignores detected prayers and music; turn it off to inspect everything. Russian quote matching uses the public-domain Russian Synodal Bible. English is an NASB-first, cross-translation profile backed offline by the public-domain World English Bible because a complete NASB electronic corpus requires separate permission from The Lockman Foundation. Both corpora are cached with the PWA for offline church testing.
 
 The human-reviewed regression sheet is `tests/fixtures/august-16-2026-ground-truth.json`. It locks the Psalm 22 sermon and the complete love sermon, including repeated quotations and inferred verse-boundary next actions.
+
+### Compare transcription models on YouTube
+
+The four-model benchmark accepts any YouTube video, a start time, and a 1–60 minute duration. **Shuffle sermon range** selects a speech-heavy range; **Use video position** takes the current embedded-player position. You can hear the exact selected audio, choose Whisper Tiny/Base/Small and/or the browser speech service, compare each result with YouTube captions, annotate or report a bad result, and export the complete report as TXT or JSON.
+
+The benchmark audio helper runs only on the local development server. Install its isolated tools once, then start the app:
+
+```powershell
+npm run setup:benchmark
+npm start
+```
+
+`npm run audit:services` runs the detector across the three newest configured full-service caption files and can save a machine-readable report with `--output <path>`.
 
 ## Feedback reports
 

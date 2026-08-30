@@ -9,6 +9,7 @@ export class RollingAudioBuffer {
     this.silentGain = null;
     this.chunks = [];
     this.totalSamples = 0;
+    this.ownsStreamTracks = true;
   }
 
   get audioTrack() {
@@ -29,6 +30,19 @@ export class RollingAudioBuffer {
         autoGainControl: true,
       },
     });
+    this.ownsStreamTracks = true;
+    return this.startCapture();
+  }
+
+  async startFromTrack(track) {
+    await this.stop({ keepAudio: false });
+    if (!track || track.kind !== "audio") throw new Error("An audio track is required.");
+    this.stream = new MediaStream([track]);
+    this.ownsStreamTracks = false;
+    return this.startCapture();
+  }
+
+  async startCapture() {
     const track = this.audioTrack;
     if (track && "contentHint" in track) track.contentHint = "speech";
 
@@ -41,7 +55,7 @@ export class RollingAudioBuffer {
     this.silentGain.gain.value = 0;
 
     if (this.context.audioWorklet && window.AudioWorkletNode) {
-      await this.context.audioWorklet.addModule("./audio-worklet.js?v=6");
+      await this.context.audioWorklet.addModule("./audio-worklet.js?v=11");
       this.capture = new AudioWorkletNode(this.context, "rolling-audio-capture", {
         numberOfInputs: 1,
         numberOfOutputs: 1,
@@ -127,13 +141,16 @@ export class RollingAudioBuffer {
     }
     try { this.source?.disconnect(); } catch {}
     try { this.silentGain?.disconnect(); } catch {}
-    for (const track of this.stream?.getTracks() ?? []) track.stop();
+    if (this.ownsStreamTracks) {
+      for (const track of this.stream?.getTracks() ?? []) track.stop();
+    }
     if (this.context && this.context.state !== "closed") await this.context.close().catch(() => {});
     this.stream = null;
     this.context = null;
     this.source = null;
     this.capture = null;
     this.silentGain = null;
+    this.ownsStreamTracks = true;
     if (!keepAudio) {
       this.chunks = [];
       this.totalSamples = 0;

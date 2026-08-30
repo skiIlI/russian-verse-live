@@ -209,6 +209,7 @@ function parseTwoNumbers(words, language) {
 
 // src/bibleVerseParser.ts
 var CONTEXT_TTL_MS = 6 * 60 * 60 * 1e3;
+var FUZZY_BOOK_ONLY_TTL_MS = 30 * 1e3;
 var DUPLICATE_TTL_MS = 20 * 1e3;
 var CHAPTER_LABELS = {
   ru: /глав(?:а|ы|е|у|ой|ою)|розд(?:іл|ілу|ілі|ілом)/g,
@@ -222,23 +223,38 @@ var RANGE_CONNECTORS = {
   ru: /* @__PURE__ */ new Set(["\u0438", "\u0434\u043E", "\u043F\u043E"]),
   en: /* @__PURE__ */ new Set(["and", "to", "through", "thru"])
 };
+var AMBIGUOUS_BARE_BOOKS = {
+  ru: /* @__PURE__ */ new Set(["proverbs"]),
+  en: /* @__PURE__ */ new Set(["acts", "job", "judges", "mark", "numbers", "proverbs", "ruth"])
+};
 function isWordCharacter(character) {
   return Boolean(character && /[\p{L}\p{N}]/u.test(character));
 }
 function hasTokenBoundaries(text, index, length) {
   return !isWordCharacter(text[index - 1]) && !isWordCharacter(text[index + length]);
 }
-function levenshteinDistance(left, right) {
-  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+function editDistance(left, right) {
+  let previousPrevious = null;
+  let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
   for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
     const current = [leftIndex];
     for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
       const substitution = previous[rightIndex - 1] + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1);
       current[rightIndex] = Math.min(current[rightIndex - 1] + 1, previous[rightIndex] + 1, substitution);
+      if (previousPrevious && leftIndex > 1 && rightIndex > 1 && left[leftIndex - 1] === right[rightIndex - 2] && left[leftIndex - 2] === right[rightIndex - 1]) {
+        current[rightIndex] = Math.min(current[rightIndex], previousPrevious[rightIndex - 2] + 1);
+      }
     }
-    previous.splice(0, previous.length, ...current);
+    previousPrevious = previous;
+    previous = current;
   }
   return previous[right.length];
+}
+function commonPrefixLength(left, right) {
+  const limit = Math.min(left.length, right.length);
+  let length = 0;
+  while (length < limit && left[length] === right[length]) length += 1;
+  return length;
 }
 function tokenSpans(text) {
   return [...text.matchAll(/[\p{L}\p{N}]+/gu)].map((match) => ({
@@ -254,6 +270,37 @@ function allowsFuzzyBookMatch(text, language) {
   }
   return sharedCue || /chapters?|verses?|i\s+(?:mean|meant)|sorry|correction|rather/.test(text);
 }
+function fuzzyDistanceLimit(alias, observed, language, text) {
+  const length = Math.max(alias.length, observed.length);
+  const numericReference = /\d{1,3}\s*[:.]\s*\d{1,3}/.test(text);
+  if (length <= 4) return numericReference ? 1 : 0;
+  if (length <= 6) return 1;
+  if (length <= 9) return 2;
+  if (length <= 14) return 3;
+  const generalLimit = Math.min(5, Math.max(3, Math.floor(length * 0.22)));
+  if (language !== "ru") return generalLimit;
+  const sharedStem = commonPrefixLength(alias, observed);
+  return sharedStem >= Math.max(4, Math.min(alias.length, observed.length) - 3) ? Math.max(generalLimit, 3) : generalLimit;
+}
+function fuzzyQuality(alias, observed, distance, tokenDelta) {
+  const length = Math.max(alias.length, observed.length);
+  return distance / length + Math.abs(alias.length - observed.length) / length * 0.08 + tokenDelta * 0.025;
+}
+function isGenericScriptureWord(observed, language) {
+  return language === "ru" ? /писан|библи/u.test(observed) : /scriptur|bible/.test(observed);
+}
+function hasBookCue(text, match, language) {
+  const before = text.slice(Math.max(0, match.index - 26), match.index);
+  return language === "ru" ? /(?:книг(?:а|и|е|у|ой|ою)|евангели(?:е|я|и)|послани(?:е|я|и))\s*$/u.test(before) : /(?:book\s+of|gospel(?:\s+according\s+to|\s+of)?|letter\s+to(?:\s+the)?)\s*$/.test(before);
+}
+function isWeakBookContext(text, match, language) {
+  return match.matchKind === "fuzzy" || AMBIGUOUS_BARE_BOOKS[language].has(match.id) && !hasBookCue(text, match, language);
+}
+function hasUnnumberedVolumeFamily(text, language) {
+  const numbered = language === "ru" ? /(?:^|\s)(?:1|2|3|перв\p{L}*|втор\p{L}*|трет\p{L}*)(?=\s|$)/u.test(text) : /(?:^|\s)(?:1|2|3|first|second|third|1st|2nd|3rd)(?=\s|$)/.test(text);
+  if (numbered) return false;
+  return language === "ru" ? /коринф|фессалоник|тимофе/u.test(text) : /\b(?:corinthians|thessalonians|timothy|samuel|kings|chronicles)\b/.test(text);
+}
 function findBook(text, language) {
   const candidates = [];
   for (const definition of BOOKS) {
@@ -262,7 +309,15 @@ function findBook(text, language) {
       let index = text.indexOf(alias);
       while (index >= 0) {
         if (hasTokenBoundaries(text, index, alias.length)) {
-          candidates.push({ ...definition, index, end: index + alias.length, length: alias.length, matchKind: "exact", distance: 0 });
+          candidates.push({
+            ...definition,
+            index,
+            end: index + alias.length,
+            length: alias.length,
+            matchKind: "exact",
+            distance: 0,
+            quality: 0
+          });
         }
         index = text.indexOf(alias, index + 1);
       }
@@ -273,27 +328,46 @@ function findBook(text, language) {
     for (const definition of BOOKS) {
       for (const rawAlias of definition.aliases[language]) {
         const aliasWords = tokenize(rawAlias);
-        const compactAlias = aliasWords.join(" ");
-        if (compactAlias.length < 6) continue;
-        for (let index = 0; index <= spans.length - aliasWords.length; index += 1) {
-          const window = spans.slice(index, index + aliasWords.length);
-          const observed = window.map((span) => span.value).join(" ");
-          const maximumDistance = compactAlias.length >= 10 ? 2 : 1;
-          const distance = levenshteinDistance(observed, compactAlias);
-          if (distance < 1 || distance > maximumDistance) continue;
-          candidates.push({
-            ...definition,
-            index: window[0].index,
-            end: window.at(-1).end,
-            length: window.at(-1).end - window[0].index,
-            matchKind: "fuzzy",
-            distance
-          });
+        const compactAlias = aliasWords.join("");
+        const windowLengths = /* @__PURE__ */ new Set([
+          Math.max(1, aliasWords.length - 1),
+          aliasWords.length,
+          aliasWords.length + 1
+        ]);
+        for (const windowLength of windowLengths) {
+          for (let index = 0; index <= spans.length - windowLength; index += 1) {
+            const window = spans.slice(index, index + windowLength);
+            const observed = window.map((span) => span.value).join("");
+            if (isGenericScriptureWord(observed, language)) continue;
+            const distance = editDistance(observed, compactAlias);
+            const maximumDistance = fuzzyDistanceLimit(compactAlias, observed, language, text);
+            if (distance < 1 || distance > maximumDistance) continue;
+            candidates.push({
+              ...definition,
+              index: window[0].index,
+              end: window.at(-1).end,
+              length: window.at(-1).end - window[0].index,
+              matchKind: "fuzzy",
+              distance,
+              quality: fuzzyQuality(compactAlias, observed, distance, windowLength - aliasWords.length)
+            });
+          }
         }
       }
     }
   }
-  return candidates.sort((left, right) => right.end - left.end || left.distance - right.distance || Number(right.matchKind === "exact") - Number(left.matchKind === "exact") || right.length - left.length)[0] ?? null;
+  const exact = candidates.filter((candidate) => candidate.matchKind === "exact").sort((left, right) => right.end - left.end || right.length - left.length)[0];
+  const cued = candidates.filter((candidate) => hasBookCue(text, candidate, language)).sort((left, right) => right.end - left.end || left.quality - right.quality)[0];
+  if (cued && (!exact || cued.end > exact.end)) return cued;
+  if (exact) return exact;
+  const bestByBook = /* @__PURE__ */ new Map();
+  for (const candidate of candidates) {
+    const current = bestByBook.get(candidate.id);
+    if (!current || candidate.quality < current.quality || candidate.quality === current.quality && candidate.end > current.end) bestByBook.set(candidate.id, candidate);
+  }
+  const ranked = [...bestByBook.values()].sort((left, right) => left.quality - right.quality || left.distance - right.distance || right.end - left.end || right.length - left.length);
+  if (ranked.length > 1 && ranked[1].quality - ranked[0].quality < 0.035) return null;
+  return ranked[0] ?? null;
 }
 function isNegatedBook(text, match, language) {
   const before = text.slice(Math.max(0, match.index - 18), match.index);
@@ -378,7 +452,9 @@ var BibleVerseReferenceDetector = class {
   contextBook = null;
   contextChapter = null;
   contextUpdatedAt = 0;
+  contextBookIsWeak = false;
   recent = /* @__PURE__ */ new Map();
+  pendingNumberPrefix = null;
   constructor(language = "ru") {
     this.language = language;
   }
@@ -394,10 +470,13 @@ var BibleVerseReferenceDetector = class {
     this.contextBook = null;
     this.contextChapter = null;
     this.contextUpdatedAt = 0;
+    this.contextBookIsWeak = false;
+    this.pendingNumberPrefix = null;
     this.recent.clear();
   }
   readContext(now = Date.now()) {
-    if (this.contextUpdatedAt && now - this.contextUpdatedAt > CONTEXT_TTL_MS) this.reset();
+    const ttl = !this.contextChapter && this.contextBookIsWeak ? FUZZY_BOOK_ONLY_TTL_MS : CONTEXT_TTL_MS;
+    if (this.contextUpdatedAt && now - this.contextUpdatedAt > ttl) this.reset();
     return {
       bookId: this.contextBook?.id ?? null,
       book: this.contextBook?.names[this.language] ?? null,
@@ -407,30 +486,67 @@ var BibleVerseReferenceDetector = class {
     };
   }
   consume(sourceText, now = Date.now()) {
-    const text = normalizeText(sourceText);
-    if (!text) return [];
+    const normalized = normalizeText(sourceText);
+    if (!normalized) return [];
     this.readContext(now);
+    let text = normalized;
+    const firstToken = tokenize(normalized)[0];
+    const firstValue = firstToken ? parseNumberTokens([firstToken], this.language, 9) : null;
+    let splitChapter = null;
+    let splitVerse = null;
+    if (this.pendingNumberPrefix && firstToken && firstValue) {
+      const prefixValue = parseNumberTokens([this.pendingNumberPrefix], this.language, 99);
+      const completedChapter = parseNumberTokens(
+        [this.pendingNumberPrefix, firstToken],
+        this.language,
+        this.contextBook?.chapters ?? 150
+      );
+      const completedVerse = parseNumberTokens([this.pendingNumberPrefix, firstToken], this.language, 176);
+      if (completedChapter && firstLabel(normalized, CHAPTER_LABELS[this.language])) {
+        text = `${this.pendingNumberPrefix} ${normalized}`;
+      } else if (completedChapter && prefixValue === this.contextChapter && firstLabel(normalized, VERSE_LABELS[this.language])) {
+        splitChapter = completedChapter;
+        text = normalizeText(normalized.slice(firstToken.length));
+      } else if (completedVerse && firstLabel(normalized, VERSE_LABELS[this.language])) {
+        splitVerse = completedVerse;
+        text = normalizeText(normalized.slice(firstToken.length));
+      }
+    }
+    this.pendingNumberPrefix = null;
+    if (hasUnnumberedVolumeFamily(text, this.language)) {
+      this.contextBook = null;
+      this.contextChapter = null;
+      this.contextUpdatedAt = 0;
+      this.contextBookIsWeak = false;
+    }
     let bookMatch = findBook(text, this.language);
     const previousBook = this.contextBook;
     if (bookMatch && isNegatedBook(text, bookMatch, this.language)) {
       this.contextBook = null;
       this.contextChapter = null;
       this.contextUpdatedAt = 0;
+      this.contextBookIsWeak = false;
       bookMatch = null;
     } else if (bookMatch) {
       this.contextBook = bookMatch;
+      this.contextBookIsWeak = isWeakBookContext(text, bookMatch, this.language);
       if (previousBook?.id !== bookMatch.id) this.contextChapter = null;
       this.contextUpdatedAt = now;
     }
     const colonReference = explicitColonReference(text, bookMatch);
     const pair = !colonReference && bookMatch ? unlabelledBookPair(text, bookMatch, this.language) : null;
     const spokenVerses = colonReference || pair ? null : verseRangeNearLabel(text, this.language);
-    const verseStart = colonReference?.verseStart ?? pair?.[1] ?? spokenVerses?.verseStart ?? null;
+    const verseStart = colonReference?.verseStart ?? pair?.[1] ?? splitVerse ?? spokenVerses?.verseStart ?? null;
     const verseEnd = colonReference?.verseEnd ?? spokenVerses?.verseEnd;
-    const chapter = colonReference?.chapter ?? pair?.[0] ?? numberNearLabel(text, CHAPTER_LABELS[this.language], this.language, this.contextBook?.chapters ?? 150) ?? (bookMatch ? chapterBesideBook(text, bookMatch, this.language) : null) ?? (verseStart ? this.contextBook?.fallbackChapterOnVerse ?? null : null);
+    const chapter = colonReference?.chapter ?? pair?.[0] ?? numberNearLabel(text, CHAPTER_LABELS[this.language], this.language, this.contextBook?.chapters ?? 150) ?? (bookMatch ? chapterBesideBook(text, bookMatch, this.language) : null) ?? splitChapter ?? (verseStart ? this.contextBook?.fallbackChapterOnVerse ?? null : null);
     if (chapter && this.contextBook && chapter <= this.contextBook.chapters) {
       this.contextChapter = chapter;
       this.contextUpdatedAt = now;
+    }
+    const trailingToken = tokenize(normalized).at(-1);
+    const trailingValue = trailingToken ? parseNumberTokens([trailingToken], this.language, 99) : null;
+    if (this.contextBook && trailingToken && trailingValue && trailingValue >= 20 && trailingValue < 100 && trailingValue % 10 === 0) {
+      this.pendingNumberPrefix = trailingToken;
     }
     if (!verseStart || verseStart > 176 || !this.contextBook || !this.contextChapter) return [];
     if (verseEnd && (verseEnd < verseStart || verseEnd > 176)) return [];
@@ -460,5 +576,6 @@ var BibleVerseReferenceDetector = class {
   }
 };
 export {
+  BOOKS,
   BibleVerseReferenceDetector
 };

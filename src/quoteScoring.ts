@@ -82,8 +82,17 @@ export function scoreQuote(
 
   const minimumMatched = reference.length <= 5 ? 3 : reference.length <= 11 ? 4 : 6;
   const baseCoverage = reference.length <= 5 ? 0.78 : reference.length <= 11 ? 0.6 : 0.48;
-  const minimumCoverage = contextual || cued ? baseCoverage : Math.max(0.66, baseCoverage);
+  const strongPartialQuote = (contextual || cued) && longestRun >= 5;
+  const minimumCoverage = contextual || cued
+    ? Math.min(baseCoverage, strongPartialQuote ? 0.5 : baseCoverage)
+    : Math.max(0.66, baseCoverage);
   const minimumScore = contextual ? 0.55 : cued ? 0.6 : 0.76;
-  if (matched < minimumMatched || coverage < minimumCoverage || score < minimumScore) return null;
+  const observedPrecision = matched / observed.length;
+  const weakUncontextualizedQuote = cued
+    && !contextual
+    && score < 0.72
+    && longestRun < 4
+    && observedPrecision < 0.36;
+  if (matched < minimumMatched || coverage < minimumCoverage || score < minimumScore || weakUncontextualizedQuote) return null;
   return { score: Math.min(0.99, score), coverage, ordered, matched };
 }

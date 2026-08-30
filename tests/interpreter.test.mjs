@@ -62,4 +62,49 @@ assert.equal(navigation.events.find((event) => event.type === "next")?.reference
 assert.equal(navigation.events.find((event) => event.type === "jump")?.reference?.canonical, "Matthew 12:7");
 assert.equal(navigation.events.find((event) => event.type === "previous")?.reference?.canonical, "Matthew 12:6");
 
+const psalmPartialQuote = await interpretTranscript(
+  "3:00 Я хотел бы начать с места писания, псалом 118, где написано: Милости твоей, Господи, полна земля. Слава Богу.",
+  "ru",
+  { corpus: new VerseCorpusIndex(russianDocument) },
+);
+assert.equal(
+  psalmPartialQuote.events.find((event) => event.type === "read")?.reference?.canonical,
+  "Psalms 118:64",
+  "A strong partial quote inside explicit chapter context should resolve to Psalm 118:64",
+);
+
+const splitCompoundChapter = await interpretTranscript([
+  "29:21 книгой Евангелия Матфея, двадцать",
+  "29:24 четвертая глава.",
+].join("\n"), "ru", { corpus: new VerseCorpusIndex(russianDocument) });
+assert.equal(
+  splitCompoundChapter.events.find((event) => event.type === "context")?.reference?.canonical,
+  "Matthew 24",
+  "A compound chapter number split by caption boundaries should remain intact",
+);
+
+const ordinaryScriptureProse = await interpretTranscript(
+  "20:00 Христос говорил притчи с народом и часто брал стихи из Писания.\n20:06 Новый Завет еще не был написан.",
+  "ru",
+  { corpus: new VerseCorpusIndex(russianDocument) },
+);
+assert.equal(ordinaryScriptureProse.events.length, 0, "ordinary sermon prose must not hallucinate a verse");
+
+const splitDamagedBook = await interpretTranscript(
+  "22:20 Кримлянам, а,\n22:23 двенадцатая глава, со второго стиха",
+  "ru",
+  { corpus: new VerseCorpusIndex(russianDocument) },
+);
+assert.equal(
+  splitDamagedBook.events.find((event) => ["open", "jump"].includes(event.type))?.reference?.canonical,
+  "Romans 12:2",
+);
+
+const unresolvedRelatedBook = await interpretTranscript(
+  "29:07 книга Откровения связана с книгой, да не ила,\n29:13 уже со второй главы",
+  "ru",
+  { corpus: new VerseCorpusIndex(russianDocument) },
+);
+assert.equal(unresolvedRelatedBook.events.length, 0, "an unresolved second book must not inherit the first book's chapter");
+
 console.log("Interpreter: exact Russian sermon audit, cross-translation English matching, and navigation passed");

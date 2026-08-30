@@ -1,9 +1,10 @@
-import { flushFeedbackQueue } from "./feedback-api.js?v=6";
-import { saveFeedbackReport } from "./feedback-store.js?v=6";
+import { flushFeedbackQueue } from "./feedback-api.js?v=11";
+import { saveFeedbackReport } from "./feedback-store.js?v=11";
 
 export function configureFeedbackUI({ elements, createReport, readPreview }) {
   let activeFlush = null;
   let statusTimer = null;
+  let reportContext = null;
 
   function showDeliveryStatus(message, tone = "info", hideAfter = 0) {
     window.clearTimeout(statusTimer);
@@ -32,14 +33,20 @@ export function configureFeedbackUI({ elements, createReport, readPreview }) {
     return activeFlush;
   }
 
-  function open() {
-    const preview = readPreview();
+  function open(overrides = {}) {
+    const preview = { ...readPreview(), ...overrides };
+    reportContext = overrides.reportContext ?? null;
+    elements.feedbackKind.value = preview.kind ?? "wrong";
+    elements.feedbackExpected.value = preview.expected ?? "";
     elements.feedbackCaught.value = preview.caught ?? "";
+    elements.feedbackNote.value = preview.note ?? "";
     elements.feedbackTranscriptPreview.textContent = preview.transcript || "No transcript captured yet.";
     elements.feedbackStatus.textContent = preview.audioSeconds
       ? `${Math.min(15, preview.audioSeconds).toFixed(1)} seconds of recent audio will be included.`
       : "No microphone audio yet. You can still send the transcript and correction.";
+    elements.feedbackCorrectionDetails.open = Boolean(overrides.reportContext);
     elements.feedbackDialog.showModal();
+    if (overrides.reportContext) elements.feedbackNote.focus();
   }
 
   async function submit(event) {
@@ -53,10 +60,12 @@ export function configureFeedbackUI({ elements, createReport, readPreview }) {
         caught: elements.feedbackCaught.value.trim(),
         note: elements.feedbackNote.value.trim(),
         requestedAudioSeconds: Number(elements.feedbackDuration.value),
+        reportContext,
       });
       await saveFeedbackReport(report);
       elements.feedbackDialog.close();
       elements.feedbackForm.reset();
+      reportContext = null;
       showDeliveryStatus("Sending feedback…");
       await flush();
     } catch {

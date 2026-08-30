@@ -1,23 +1,32 @@
-const CACHE_NAME = "verse-listener-v8";
+const CACHE_NAME = "verse-listener-v11";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=8",
-  "./app.js?v=8",
-  "./parser.js?v=8",
-  "./interpreter.js?v=8",
-  "./transcript-lab.js?v=8",
-  "./audio-ring-buffer.js?v=8",
-  "./audio-worklet.js?v=8",
-  "./feedback-store.js?v=8",
-  "./feedback-api.js?v=8",
-  "./feedback-ui.js?v=8",
-  "./source-context.js?v=8",
-  "./excerpts.js?v=8",
-  "./more-menu.js?v=8",
-  "./mic-level-meter.js?v=8",
-  "./mic-recording.js?v=8",
-  "./mic-test.js?v=8",
+  "./styles.css?v=11",
+  "./app.js?v=11",
+  "./parser.js?v=11",
+  "./interpreter.js?v=11",
+  "./transcript-lab.js?v=11",
+  "./transcript-feedback.js?v=11",
+  "./transcript-review.js?v=11",
+  "./youtube-review.js?v=11",
+  "./youtube-audio-transcriber.js?v=11",
+  "./transcript-timeline.js?v=11",
+  "./transcription-benchmark.js?v=11",
+  "./transcription-benchmark-core.js?v=11",
+  "./whisper-session.js?v=11",
+  "./whisper-worker.js?v=11",
+  "./audio-ring-buffer.js?v=11",
+  "./audio-worklet.js?v=11",
+  "./feedback-store.js?v=11",
+  "./feedback-api.js?v=11",
+  "./feedback-ui.js?v=11",
+  "./source-context.js?v=11",
+  "./excerpts.js?v=11",
+  "./more-menu.js?v=11",
+  "./mic-level-meter.js?v=11",
+  "./mic-recording.js?v=11",
+  "./mic-test.js?v=11",
   "./data/russyn.json",
   "./data/engwebp.json",
   "./transcripts/0000 secondsлет назад. Это было вче.txt",
@@ -45,6 +54,17 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+  if (url.origin === self.location.origin && url.pathname.startsWith("/api/")) return;
+  if (url.origin === self.location.origin && url.pathname.includes("/data/")) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+        if (response?.status === 200) caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
+        return response;
+      })),
+    );
+    return;
+  }
   event.respondWith(
     fetch(event.request).then((response) => {
       if (!response || response.status !== 200 || response.type === "opaque") return response;

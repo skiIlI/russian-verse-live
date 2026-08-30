@@ -1,12 +1,13 @@
-import { BibleVerseReferenceDetector } from "./parser.js?v=8";
-import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=8";
-import { configureFeedbackUI } from "./feedback-ui.js?v=8";
-import { EXCERPTS } from "./excerpts.js?v=8";
-import { configureMicTest } from "./mic-test.js?v=8";
-import { configureMoreMenu } from "./more-menu.js?v=8";
-import { configureTranscriptLab } from "./transcript-lab.js?v=8";
+import { BibleVerseReferenceDetector } from "./parser.js?v=11";
+import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=11";
+import { configureFeedbackUI } from "./feedback-ui.js?v=11";
+import { EXCERPTS } from "./excerpts.js?v=11";
+import { configureMicTest } from "./mic-test.js?v=11";
+import { configureMoreMenu } from "./more-menu.js?v=11";
+import { configureTranscriptLab } from "./transcript-lab.js?v=11";
+import { WhisperSession, RECOGNITION_MODELS } from "./whisper-session.js?v=11";
 
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.4.0";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const LANGUAGE = {
   ru: { recognition: "ru-RU", name: "Russian", ready: "Ready to listen for Russian Bible references." },
@@ -18,9 +19,10 @@ const elements = Object.fromEntries([
   "latestEmpty", "latestResult", "latestReference", "latestSource", "transcriptList", "excerptFolder",
   "folderButton", "folderContent", "excerptList", "testNote", "reportFeedbackButton", "feedbackDeliveryStatus", "feedbackDialog",
   "closeFeedbackButton", "feedbackForm", "feedbackKind", "feedbackExpected", "feedbackCaught",
-  "feedbackDuration", "feedbackNote", "feedbackTranscriptPreview", "feedbackStatus", "sendFeedbackButton", "moreButton",
+  "feedbackDuration", "feedbackNote", "feedbackCorrectionDetails", "feedbackTranscriptPreview", "feedbackStatus", "sendFeedbackButton", "moreButton",
   "moreDialog", "closeMoreButton", "installInstructions", "nativeInstallButton", "downloadSourceButton",
   "sourceDownloadStatus", "themeButton",
+  "recognitionModel", "recognitionModelStatus",
 ].map((id) => [id, document.querySelector(`#${id}`)]));
 elements.phaseText = document.querySelector("#phase span");
 elements.modeButtons = [...document.querySelectorAll(".mode")];
@@ -30,6 +32,7 @@ let language = localStorage.getItem("verse-language") === "en" ? "en" : "ru";
 const detector = new BibleVerseReferenceDetector(language);
 const rollingAudio = new RollingAudioBuffer(60);
 let recognition = null;
+let whisperSession = null;
 let recognitionRunning = false;
 let wantsListening = false;
 let restartTimer = null;
@@ -59,6 +62,7 @@ function updateControls() {
   elements.startButton.disabled = wantsListening || busy;
   elements.stopButton.disabled = !wantsListening && !busy;
   for (const button of elements.languageButtons) button.disabled = wantsListening || busy;
+  elements.recognitionModel.disabled = wantsListening || busy;
   const excerpts = EXCERPTS[language];
   for (const button of elements.excerptList.querySelectorAll("button")) {
     button.disabled = busy;
@@ -229,8 +233,35 @@ function startRecognition() {
   }
 }
 
+function startWhisper() {
+  const model = elements.recognitionModel.value;
+  whisperSession?.stop();
+  whisperSession = new WhisperSession({
+    buffer: rollingAudio,
+    model,
+    language,
+    onText: (text) => consumeTranscript(text),
+    onStatus: (message, tone) => {
+      elements.recognitionModelStatus.textContent = message;
+      if (tone === "ready") {
+        elements.listenerIcon.textContent = "🎙️";
+        setPhase("Listening", "active");
+        setMessage(`Listening locally with ${RECOGNITION_MODELS[model].label}…`);
+      } else if (tone === "error") {
+        setPhase("Needs attention", "error");
+        setMessage(message);
+      } else {
+        setPhase("Loading model", "active");
+        setMessage(message);
+      }
+    },
+  });
+  whisperSession.start();
+}
+
 async function startListening() {
-  if (!SpeechRecognition) {
+  const model = elements.recognitionModel.value;
+  if (model === "browser" && !SpeechRecognition) {
     setPhase("Unsupported", "error");
     setMessage("This browser does not provide live speech recognition. Try Chrome or Safari.");
     return;
@@ -256,7 +287,8 @@ async function startListening() {
     return;
   }
   await requestWakeLock();
-  startRecognition();
+  if (model === "browser") startRecognition();
+  else startWhisper();
 }
 
 async function stopListening() {
@@ -264,6 +296,8 @@ async function stopListening() {
   clearTimeout(restartTimer);
   restartTimer = null;
   stopActiveTest();
+  whisperSession?.stop();
+  whisperSession = null;
   if (recognitionRunning) {
     try { recognition.stop(); } catch { recognition.abort(); }
   }
@@ -272,6 +306,7 @@ async function stopListening() {
   elements.listenerIcon.textContent = "📖";
   setPhase("Ready");
   setMessage("Listening stopped. Recent audio remains available for feedback.");
+  elements.recognitionModelStatus.textContent = "";
   updateControls();
   if (wakeLock) {
     await wakeLock.release().catch(() => {});
@@ -382,7 +417,7 @@ function toggleFolder(section, content, button) {
   button.setAttribute("aria-expanded", String(open));
 }
 
-async function createFeedbackReport({ kind, expected, caught, note, requestedAudioSeconds }) {
+async function createFeedbackReport({ kind, expected, caught, note, requestedAudioSeconds, reportContext }) {
   const actualAudioSeconds = Math.min(requestedAudioSeconds, rollingAudio.availableSeconds);
   const id = crypto.randomUUID ? crypto.randomUUID() : `report-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   return {
@@ -398,11 +433,11 @@ async function createFeedbackReport({ kind, expected, caught, note, requestedAud
     note,
     requestedAudioSeconds,
     actualAudioSeconds,
-    context: detector.readContext(),
-    latestReference: latestDetected,
-    transcripts: interimTranscript
+    context: reportContext?.context ?? detector.readContext(),
+    latestReference: reportContext?.latestReference ?? latestDetected,
+    transcripts: reportContext?.transcripts ?? (interimTranscript
       ? [{ text: interimTranscript, at: new Date().toISOString(), interim: true }, ...transcriptHistory]
-      : transcriptHistory,
+      : transcriptHistory),
     browser: navigator.userAgent,
     audioBlob: rollingAudio.createWav(requestedAudioSeconds),
   };
@@ -434,7 +469,10 @@ micTest = configureMicTest({
     if (wantsListening) await stopListening();
   },
 });
-transcriptLab = configureTranscriptLab({ initialLanguage: language });
+transcriptLab = configureTranscriptLab({
+  initialLanguage: language,
+  onReport: (report) => feedbackUI.open(report),
+});
 
 elements.startButton.addEventListener("click", () => void startListening());
 elements.stopButton.addEventListener("click", () => void stopListening());
@@ -442,6 +480,13 @@ elements.folderButton.addEventListener("click", () => toggleFolder(elements.exce
 elements.moreButton.addEventListener("click", () => elements.moreDialog.showModal());
 elements.closeMoreButton.addEventListener("click", () => elements.moreDialog.close());
 for (const button of elements.languageButtons) button.addEventListener("click", () => setLanguage(button.dataset.language));
+elements.recognitionModel.value = localStorage.getItem("verse-recognition-model") || "base";
+elements.recognitionModel.addEventListener("change", () => {
+  localStorage.setItem("verse-recognition-model", elements.recognitionModel.value);
+  elements.recognitionModelStatus.textContent = elements.recognitionModel.value === "browser"
+    ? "Uses the browser speech service when available."
+    : `${RECOGNITION_MODELS[elements.recognitionModel.value].label} downloads once, then runs locally.`;
+});
 for (const button of elements.modeButtons) {
   button.addEventListener("click", () => {
     playbackMode = button.dataset.mode;
@@ -457,12 +502,13 @@ for (const button of elements.modeButtons) {
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && wantsListening) {
     void requestWakeLock();
-    startRecognition();
+    if (elements.recognitionModel.value === "browser") startRecognition();
   }
 });
 window.addEventListener("pagehide", () => {
   clearTimeout(restartTimer);
   if (recognitionRunning) recognition.abort();
+  whisperSession?.stop();
   void rollingAudio.stop({ keepAudio: false });
   void micTest?.destroy();
 });
@@ -479,5 +525,5 @@ renderExcerpts();
 void feedbackUI.flush();
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=8").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=11").catch(() => {}));
 }
