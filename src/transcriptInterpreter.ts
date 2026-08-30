@@ -136,16 +136,22 @@ function collectExplicit(
     }
     const prior = segments[segment.index - 1];
     const hasDanglingRelation = Boolean(prior && labelCue.test(segment.text) && danglingBookRelation.test(prior.text));
-    if (hasDanglingRelation) detector.reset();
-    const nearbyPrior = prior
+    let nearbyPrior = prior
       && !prior.isMusic
       && !prior.isPrayer
       && prior.startSeconds !== null
       && segment.startSeconds !== null
       && segment.startSeconds - prior.startSeconds <= 12
       && prior.text.length <= 90
-      && !labelCue.test(prior.text)
-      && !hasDanglingRelation;
+      && !labelCue.test(prior.text);
+    if (hasDanglingRelation && prior) {
+      const activeBook = detector.readContext(now).bookId;
+      const probe = new BibleVerseReferenceDetector(language);
+      probe.consume(`${prior.text} ${segment.text}`, now);
+      const relatedBook = probe.readContext(now).bookId;
+      detector.reset();
+      nearbyPrior = Boolean(relatedBook && relatedBook !== activeBook);
+    }
     const parserText = nearbyPrior && labelCue.test(segment.text)
       ? `${prior.text} ${segment.text}`
       : segment.text;

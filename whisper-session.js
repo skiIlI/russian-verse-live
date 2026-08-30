@@ -53,7 +53,7 @@ export class WhisperSession {
   start() {
     if (this.running) return;
     this.running = true;
-    this.worker = new Worker("./whisper-worker.js?v=11", { type: "module" });
+    this.worker = new Worker("./whisper-worker.js?v=12", { type: "module" });
     this.worker.addEventListener("message", (event) => this.handleMessage(event.data));
     this.worker.addEventListener("error", () => this.onStatus?.("Local model could not start.", "error"));
     this.worker.postMessage({ type: "load", model: this.model });

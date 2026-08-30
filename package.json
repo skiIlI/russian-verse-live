@@ -10,6 +10,6 @@
     "compile:interpreter": "npx --yes esbuild src/transcriptInterpreter.ts --bundle --format=esm --platform=browser --outfile=interpreter.js",
     "build:corpus": "node scripts/build-bible-corpus.mjs",
     "audit:services": "node scripts/audit-youtube-services.mjs",
-    "test": "node tests/parser.test.mjs && node tests/interpreter.test.mjs && node tests/audio-buffer.test.mjs && node tests/feedback.test.mjs && node tests/mic-test.test.mjs && node tests/youtube-review.test.mjs && node tests/youtube-captions.test.mjs && node tests/youtube-audio.test.mjs && node tests/youtube-audio-cache.test.mjs && node tests/transcript-review.test.mjs && node tests/transcript-timeline.test.mjs && node tests/whisper-session.test.mjs && node tests/transcription-benchmark.test.mjs && node tests/static.test.mjs"
+    "test": "node tests/parser.test.mjs && node tests/interpreter.test.mjs && node tests/youtube-benchmark-ground-truth.test.mjs && node tests/audio-buffer.test.mjs && node tests/feedback.test.mjs && node tests/mic-test.test.mjs && node tests/youtube-review.test.mjs && node tests/youtube-captions.test.mjs && node tests/youtube-audio.test.mjs && node tests/youtube-audio-cache.test.mjs && node tests/transcript-review.test.mjs && node tests/transcript-timeline.test.mjs && node tests/whisper-session.test.mjs && node tests/transcription-benchmark.test.mjs && node tests/static.test.mjs"
   }
 }

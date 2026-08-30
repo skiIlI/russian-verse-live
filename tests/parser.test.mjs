@@ -83,6 +83,9 @@ numberedFamily.consume("Псалом двадцать второй", startedAt);
 numberedFamily.consume("Апостол Павел к Коринфянам в четвертой главе", startedAt + 1_000);
 assert.equal(numberedFamily.readContext(startedAt + 1_000).bookId, null);
 
+const damagedVerseLabel = new BibleVerseReferenceDetector("ru");
+assert.equal(damagedVerseLabel.consume("кримля нам, двенадцатая глава, со второго с тихана", startedAt)[0]?.canonical, "Romans 12:2");
+
 function singleAsrMutation(alias, language) {
   const ignored = new Set(language === "ru"
     ? ["книга", "к", "от", "послание", "евангелие"]

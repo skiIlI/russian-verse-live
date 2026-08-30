@@ -154,7 +154,7 @@ function isGenericScriptureWord(observed: string, language: SupportedLanguage): 
 function hasBookCue(text: string, match: BookMatch, language: SupportedLanguage): boolean {
   const before = text.slice(Math.max(0, match.index - 26), match.index);
   return language === "ru"
-    ? /(?:книг(?:а|и|е|у|ой|ою)|евангели(?:е|я|и)|послани(?:е|я|и))\s*$/u.test(before)
+    ? /(?:книг(?:а|и|е|у|ой|ою)|евангели(?:е|я|и)|послани(?:е|я|и))\s*(?:[,;]\s*(?:а|да|ну|э|не)\s*){0,3}[,;\s]*$/u.test(before)
     : /(?:book\s+of|gospel(?:\s+according\s+to|\s+of)?|letter\s+to(?:\s+the)?)\s*$/.test(before);
 }
 
@@ -206,6 +206,7 @@ function findBook(text: string, language: SupportedLanguage): BookMatch | null {
           Math.max(1, aliasWords.length - 1),
           aliasWords.length,
           aliasWords.length + 1,
+          aliasWords.length + 2,
         ]);
         for (const windowLength of windowLengths) {
           for (let index = 0; index <= spans.length - windowLength; index += 1) {
@@ -398,7 +399,7 @@ export class BibleVerseReferenceDetector {
   }
 
   consume(sourceText: string, now = Date.now()): VerseReference[] {
-    const normalized = normalizeText(sourceText);
+    const normalized = normalizeText(sourceText).replace(/(^|\s)с\s+тих\p{L}*/gu, "$1стих");
     if (!normalized) return [];
     this.readContext(now);
     let text = normalized;

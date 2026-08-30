@@ -291,7 +291,7 @@ function isGenericScriptureWord(observed, language) {
 }
 function hasBookCue(text, match, language) {
   const before = text.slice(Math.max(0, match.index - 26), match.index);
-  return language === "ru" ? /(?:книг(?:а|и|е|у|ой|ою)|евангели(?:е|я|и)|послани(?:е|я|и))\s*$/u.test(before) : /(?:book\s+of|gospel(?:\s+according\s+to|\s+of)?|letter\s+to(?:\s+the)?)\s*$/.test(before);
+  return language === "ru" ? /(?:книг(?:а|и|е|у|ой|ою)|евангели(?:е|я|и)|послани(?:е|я|и))\s*(?:[,;]\s*(?:а|да|ну|э|не)\s*){0,3}[,;\s]*$/u.test(before) : /(?:book\s+of|gospel(?:\s+according\s+to|\s+of)?|letter\s+to(?:\s+the)?)\s*$/.test(before);
 }
 function isWeakBookContext(text, match, language) {
   return match.matchKind === "fuzzy" || AMBIGUOUS_BARE_BOOKS[language].has(match.id) && !hasBookCue(text, match, language);
@@ -332,7 +332,8 @@ function findBook(text, language) {
         const windowLengths = /* @__PURE__ */ new Set([
           Math.max(1, aliasWords.length - 1),
           aliasWords.length,
-          aliasWords.length + 1
+          aliasWords.length + 1,
+          aliasWords.length + 2
         ]);
         for (const windowLength of windowLengths) {
           for (let index = 0; index <= spans.length - windowLength; index += 1) {
@@ -486,7 +487,7 @@ var BibleVerseReferenceDetector = class {
     };
   }
   consume(sourceText, now = Date.now()) {
-    const normalized = normalizeText(sourceText);
+    const normalized = normalizeText(sourceText).replace(/(^|\s)с\s+тих\p{L}*/gu, "$1\u0441\u0442\u0438\u0445");
     if (!normalized) return [];
     this.readContext(now);
     let text = normalized;

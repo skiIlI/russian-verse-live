@@ -1,6 +1,6 @@
-import { interpretTranscript } from "./interpreter.js?v=11";
-import { parseYouTubeVideoId } from "./youtube-review.js?v=11";
-import { captionCues, chooseSermonStart, detectorAgreement, formatClock, parseClock, recommendModel, sliceCaptionTranscript, wordErrorRate } from "./transcription-benchmark-core.js?v=11";
+import { interpretTranscript } from "./interpreter.js?v=12";
+import { parseYouTubeVideoId } from "./youtube-review.js?v=12";
+import { captionCues, chooseSermonStart, detectorAgreement, formatClock, parseClock, recommendModel, sliceCaptionTranscript, wordErrorRate } from "./transcription-benchmark-core.js?v=12";
 
 const MODELS = [
   { id: "tiny", label: "Whisper Tiny" },
@@ -24,7 +24,7 @@ function download(name, contents, type) {
 
 function runWorker(model, audio, language, onProgress, registerCancel) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker("./whisper-worker.js?v=11", { type: "module" });
+    const worker = new Worker("./whisper-worker.js?v=12", { type: "module" });
     registerCancel(() => { worker.terminate(); reject(new Error("Benchmark stopped.")); });
     const started = performance.now();
     worker.addEventListener("message", (event) => {
@@ -161,7 +161,10 @@ export function configureTranscriptionBenchmark({ youtubeUrl, language: readLang
           if (event.results[index].isFinal) text += ` ${event.results[index][0]?.transcript ?? ""}`;
         }
       };
-      recognition.onerror = (event) => finish(reject, new Error(`Browser recognition: ${event.error}.`));
+      recognition.onerror = (event) => {
+        elements.audio.pause();
+        finish(reject, new Error(`Browser recognition: ${event.error}.`));
+      };
       recognition.onend = () => {
         if (!cancelled && !elements.audio.ended && !elements.audio.paused) {
           try { recognition.start(track); } catch {}

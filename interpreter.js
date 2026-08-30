@@ -291,7 +291,7 @@ function isGenericScriptureWord(observed, language) {
 }
 function hasBookCue(text, match, language) {
   const before = text.slice(Math.max(0, match.index - 26), match.index);
-  return language === "ru" ? /(?:книг(?:а|и|е|у|ой|ою)|евангели(?:е|я|и)|послани(?:е|я|и))\s*$/u.test(before) : /(?:book\s+of|gospel(?:\s+according\s+to|\s+of)?|letter\s+to(?:\s+the)?)\s*$/.test(before);
+  return language === "ru" ? /(?:книг(?:а|и|е|у|ой|ою)|евангели(?:е|я|и)|послани(?:е|я|и))\s*(?:[,;]\s*(?:а|да|ну|э|не)\s*){0,3}[,;\s]*$/u.test(before) : /(?:book\s+of|gospel(?:\s+according\s+to|\s+of)?|letter\s+to(?:\s+the)?)\s*$/.test(before);
 }
 function isWeakBookContext(text, match, language) {
   return match.matchKind === "fuzzy" || AMBIGUOUS_BARE_BOOKS[language].has(match.id) && !hasBookCue(text, match, language);
@@ -332,7 +332,8 @@ function findBook(text, language) {
         const windowLengths = /* @__PURE__ */ new Set([
           Math.max(1, aliasWords.length - 1),
           aliasWords.length,
-          aliasWords.length + 1
+          aliasWords.length + 1,
+          aliasWords.length + 2
         ]);
         for (const windowLength of windowLengths) {
           for (let index = 0; index <= spans.length - windowLength; index += 1) {
@@ -486,7 +487,7 @@ var BibleVerseReferenceDetector = class {
     };
   }
   consume(sourceText, now = Date.now()) {
-    const normalized = normalizeText(sourceText);
+    const normalized = normalizeText(sourceText).replace(/(^|\s)с\s+тих\p{L}*/gu, "$1\u0441\u0442\u0438\u0445");
     if (!normalized) return [];
     this.readContext(now);
     let text = normalized;
@@ -619,6 +620,15 @@ var EN_EQUIVALENTS = {
   remove: "move",
   move: "move"
 };
+var RU_ASR_EQUIVALENTS = {
+  \u043F\u043E\u043F\u0440\u044B\u0448\u0435\u0441\u0442\u0432: "\u043F\u0440\u043E\u0448\u0435\u0441\u0442\u0432\u0438",
+  \u043F\u043E\u043F\u0440\u044B\u0448\u0435\u0441\u0442\u0432\u0438: "\u043F\u0440\u043E\u0448\u0435\u0441\u0442\u0432\u0438",
+  \u043F\u0440\u0438\u0448\u0435\u0441\u0442\u0432\u0438: "\u043F\u0440\u043E\u0448\u0435\u0441\u0442\u0432\u0438",
+  \u043F\u043E\u0432\u043E\u0434: "\u0432\u043E\u0434\u0430\u043C",
+  \u0432\u043E\u0437\u0440\u0430\u0442\u0438\u0435\u0442\u0441: "\u043D\u0430\u0438\u0434\u0435\u0448\u044C",
+  \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442\u0441: "\u043D\u0430\u0438\u0434\u0435\u0448\u044C",
+  \u0432\u043E\u0437\u0432\u0440\u0430\u0442\u0438\u0435\u0442\u0441: "\u043D\u0430\u0438\u0434\u0435\u0448\u044C"
+};
 function normalizeForMatching(text) {
   return text.normalize("NFKD").toLocaleLowerCase().replace(/[\u0300-\u036f]/g, "").replaceAll("\u0451", "\u0435").replaceAll("\u0456", "\u0438").replaceAll("\u0457", "\u0438").replaceAll("\u0454", "\u0435").replaceAll("\u0491", "\u0433").replace(/[’']/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").replace(/\s+/g, " ").trim();
 }
@@ -627,10 +637,10 @@ function stem(token, language) {
   for (const suffix of suffixes) {
     if (token.endsWith(suffix) && token.length - suffix.length >= 4) {
       const stemmed = token.slice(0, -suffix.length);
-      return language === "en" ? EN_EQUIVALENTS[stemmed] ?? stemmed : stemmed;
+      return language === "en" ? EN_EQUIVALENTS[stemmed] ?? stemmed : RU_ASR_EQUIVALENTS[stemmed] ?? stemmed;
     }
   }
-  return language === "en" ? EN_EQUIVALENTS[token] ?? token : token;
+  return language === "en" ? EN_EQUIVALENTS[token] ?? token : RU_ASR_EQUIVALENTS[token] ?? token;
 }
 function matchingTokens(text, language, meaningfulOnly = false) {
   const raw = normalizeForMatching(text).match(/[\p{L}\p{N}]+/gu) ?? [];
@@ -766,7 +776,7 @@ function scoreQuote(reference, observed, { contextual = false, cued = false } = 
   const baseCoverage = reference.length <= 5 ? 0.78 : reference.length <= 11 ? 0.6 : 0.48;
   const strongPartialQuote = (contextual || cued) && longestRun >= 5;
   const minimumCoverage = contextual || cued ? Math.min(baseCoverage, strongPartialQuote ? 0.5 : baseCoverage) : Math.max(0.66, baseCoverage);
-  const minimumScore = contextual ? 0.55 : cued ? 0.6 : 0.76;
+  const minimumScore = contextual ? 0.55 : cued ? 0.6 : 0.75;
   const observedPrecision = matched / observed.length;
   const weakUncontextualizedQuote = cued && !contextual && score < 0.72 && longestRun < 4 && observedPrecision < 0.36;
   if (matched < minimumMatched || coverage < minimumCoverage || score < minimumScore || weakUncontextualizedQuote) return null;
@@ -1015,8 +1025,15 @@ function collectExplicit(segments, language, ignorePrayer) {
     }
     const prior = segments[segment.index - 1];
     const hasDanglingRelation = Boolean(prior && labelCue.test(segment.text) && danglingBookRelation.test(prior.text));
-    if (hasDanglingRelation) detector.reset();
-    const nearbyPrior = prior && !prior.isMusic && !prior.isPrayer && prior.startSeconds !== null && segment.startSeconds !== null && segment.startSeconds - prior.startSeconds <= 12 && prior.text.length <= 90 && !labelCue.test(prior.text) && !hasDanglingRelation;
+    let nearbyPrior = prior && !prior.isMusic && !prior.isPrayer && prior.startSeconds !== null && segment.startSeconds !== null && segment.startSeconds - prior.startSeconds <= 12 && prior.text.length <= 90 && !labelCue.test(prior.text);
+    if (hasDanglingRelation && prior) {
+      const activeBook = detector.readContext(now).bookId;
+      const probe = new BibleVerseReferenceDetector(language);
+      probe.consume(`${prior.text} ${segment.text}`, now);
+      const relatedBook = probe.readContext(now).bookId;
+      detector.reset();
+      nearbyPrior = Boolean(relatedBook && relatedBook !== activeBook);
+    }
     const parserText = nearbyPrior && labelCue.test(segment.text) ? `${prior.text} ${segment.text}` : segment.text;
     const references = detector.consume(parserText, now);
     const context = detector.readContext(now);

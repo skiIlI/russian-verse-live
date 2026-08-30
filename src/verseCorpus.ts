@@ -42,6 +42,15 @@ const EN_EQUIVALENTS: Record<string, string> = {
   remove: "move",
   move: "move",
 };
+const RU_ASR_EQUIVALENTS: Record<string, string> = {
+  попрышеств: "прошестви",
+  попрышестви: "прошестви",
+  пришестви: "прошестви",
+  повод: "водам",
+  возратиетс: "наидешь",
+  возвращаетс: "наидешь",
+  возвратиетс: "наидешь",
+};
 
 export function normalizeForMatching(text: string): string {
   return text
@@ -64,10 +73,10 @@ function stem(token: string, language: SupportedLanguage): string {
   for (const suffix of suffixes) {
     if (token.endsWith(suffix) && token.length - suffix.length >= 4) {
       const stemmed = token.slice(0, -suffix.length);
-      return language === "en" ? EN_EQUIVALENTS[stemmed] ?? stemmed : stemmed;
+      return language === "en" ? EN_EQUIVALENTS[stemmed] ?? stemmed : RU_ASR_EQUIVALENTS[stemmed] ?? stemmed;
     }
   }
-  return language === "en" ? EN_EQUIVALENTS[token] ?? token : token;
+  return language === "en" ? EN_EQUIVALENTS[token] ?? token : RU_ASR_EQUIVALENTS[token] ?? token;
 }
 
 export function matchingTokens(text: string, language: SupportedLanguage, meaningfulOnly = false): string[] {

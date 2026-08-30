@@ -101,10 +101,24 @@ assert.equal(
 );
 
 const unresolvedRelatedBook = await interpretTranscript(
-  "29:07 книга Откровения связана с книгой, да не ила,\n29:13 уже со второй главы",
+  "29:07 книга Откровения связана с книгой, ба ла ма,\n29:13 уже со второй главы",
   "ru",
   { corpus: new VerseCorpusIndex(russianDocument) },
 );
 assert.equal(unresolvedRelatedBook.events.length, 0, "an unresolved second book must not inherit the first book's chapter");
+
+const damagedRelatedBook = await interpretTranscript(
+  "29:07 книга Откровения связана с книгой, да не ила,\n29:13 уже со второй главы",
+  "ru",
+  { corpus: new VerseCorpusIndex(russianDocument) },
+);
+assert.equal(damagedRelatedBook.events.find((event) => event.type === "context")?.reference?.canonical, "Daniel 2");
+
+const ecclesiastesAsr = await interpretTranscript(
+  "1:58:45 Есть вариант! Отпускай хлеб твоим поводам!\n1:58:49 Потому что попрышествием многих дней!\n1:58:52 Он опять возвратится к твоему дому.",
+  "ru",
+  { corpus: new VerseCorpusIndex(russianDocument) },
+);
+assert.equal(ecclesiastesAsr.events.find((event) => event.type === "read")?.reference?.canonical, "Ecclesiastes 11:1");
 
 console.log("Interpreter: exact Russian sermon audit, cross-translation English matching, and navigation passed");

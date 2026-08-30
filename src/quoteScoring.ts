@@ -86,7 +86,7 @@ export function scoreQuote(
   const minimumCoverage = contextual || cued
     ? Math.min(baseCoverage, strongPartialQuote ? 0.5 : baseCoverage)
     : Math.max(0.66, baseCoverage);
-  const minimumScore = contextual ? 0.55 : cued ? 0.6 : 0.76;
+  const minimumScore = contextual ? 0.55 : cued ? 0.6 : 0.75;
   const observedPrecision = matched / observed.length;
   const weakUncontextualizedQuote = cued
     && !contextual

@@ -1,11 +1,11 @@
-import { BibleVerseReferenceDetector } from "./parser.js?v=11";
-import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=11";
-import { configureFeedbackUI } from "./feedback-ui.js?v=11";
-import { EXCERPTS } from "./excerpts.js?v=11";
-import { configureMicTest } from "./mic-test.js?v=11";
-import { configureMoreMenu } from "./more-menu.js?v=11";
-import { configureTranscriptLab } from "./transcript-lab.js?v=11";
-import { WhisperSession, RECOGNITION_MODELS } from "./whisper-session.js?v=11";
+import { BibleVerseReferenceDetector } from "./parser.js?v=12";
+import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=12";
+import { configureFeedbackUI } from "./feedback-ui.js?v=12";
+import { EXCERPTS } from "./excerpts.js?v=12";
+import { configureMicTest } from "./mic-test.js?v=12";
+import { configureMoreMenu } from "./more-menu.js?v=12";
+import { configureTranscriptLab } from "./transcript-lab.js?v=12";
+import { WhisperSession, RECOGNITION_MODELS } from "./whisper-session.js?v=12";
 
 const APP_VERSION = "2.4.0";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -525,5 +525,5 @@ renderExcerpts();
 void feedbackUI.flush();
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=11").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=12").catch(() => {}));
 }

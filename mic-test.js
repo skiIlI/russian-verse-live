@@ -1,5 +1,5 @@
-import { createMicLevelMeter } from "./mic-level-meter.js?v=11";
-import { createMicRecording } from "./mic-recording.js?v=11";
+import { createMicLevelMeter } from "./mic-level-meter.js?v=12";
+import { createMicRecording } from "./mic-recording.js?v=12";
 
 const ELEMENT_IDS = [
   "micTestSection", "micTestFolderButton", "micTestContent", "micTestSummary", "micTestStatus",

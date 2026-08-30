@@ -2,7 +2,7 @@
   "name": "Bible Verse Listener",
   "short_name": "Verse Listener",
   "description": "Free Russian and English sermon Bible verse detector.",
-  "start_url": "./?v=11",
+  "start_url": "./?v=12",
   "scope": "./",
   "display": "standalone",
   "background_color": "#171717",
