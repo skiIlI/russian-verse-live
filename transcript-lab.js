@@ -1,9 +1,9 @@
-import { formatConsoleEvent, interpretTranscript } from "./interpreter.js?v=12";
-import { buildCompleteReviewPackage } from "./transcript-review.js?v=12";
-import { configureYouTubeReview, parseYouTubeVideoId, SERVICE_VIDEO_URL } from "./youtube-review.js?v=12";
-import { renderTranscriptTimeline } from "./transcript-timeline.js?v=12";
-import { clockTime, configureYouTubeAudioTranscriber } from "./youtube-audio-transcriber.js?v=12";
-import { configureTranscriptionBenchmark } from "./transcription-benchmark.js?v=12";
+import { formatConsoleEvent, interpretTranscript } from "./interpreter.js?v=13";
+import { buildCompleteReviewPackage } from "./transcript-review.js?v=13";
+import { configureYouTubeReview, parseYouTubeVideoId, SERVICE_VIDEO_URL } from "./youtube-review.js?v=13";
+import { renderTranscriptTimeline } from "./transcript-timeline.js?v=13";
+import { clockTime, configureYouTubeAudioTranscriber } from "./youtube-audio-transcriber.js?v=13";
+import { configureTranscriptionBenchmark } from "./transcription-benchmark.js?v=13";
 
 const SERVICE_TRANSCRIPT = "./transcripts/0000 secondsлет назад. Это было вче.txt";
 function byId(id) {

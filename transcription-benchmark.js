@@ -1,6 +1,6 @@
-import { interpretTranscript } from "./interpreter.js?v=12";
-import { parseYouTubeVideoId } from "./youtube-review.js?v=12";
-import { captionCues, chooseSermonStart, detectorAgreement, formatClock, parseClock, recommendModel, sliceCaptionTranscript, wordErrorRate } from "./transcription-benchmark-core.js?v=12";
+import { interpretTranscript } from "./interpreter.js?v=13";
+import { parseYouTubeVideoId } from "./youtube-review.js?v=13";
+import { captionCues, chooseSermonStart, detectorAgreement, formatClock, parseClock, recommendModel, sliceCaptionTranscript, wordErrorRate } from "./transcription-benchmark-core.js?v=13";
 
 const MODELS = [
   { id: "tiny", label: "Whisper Tiny" },
@@ -24,7 +24,7 @@ function download(name, contents, type) {
 
 function runWorker(model, audio, language, onProgress, registerCancel) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker("./whisper-worker.js?v=12", { type: "module" });
+    const worker = new Worker("./whisper-worker.js?v=13", { type: "module" });
     registerCancel(() => { worker.terminate(); reject(new Error("Benchmark stopped.")); });
     const started = performance.now();
     worker.addEventListener("message", (event) => {

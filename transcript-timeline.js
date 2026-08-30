@@ -1,4 +1,4 @@
-import { attachTranscriptReport, buildTranscriptReport } from "./transcript-feedback.js?v=12";
+import { attachTranscriptReport, buildTranscriptReport } from "./transcript-feedback.js?v=13";
 
 const EVENT_ICONS = {
   context: "◫",

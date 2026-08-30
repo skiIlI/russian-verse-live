@@ -5,6 +5,20 @@ export const RECOGNITION_MODELS = {
   small: { label: "Whisper Small", local: true },
 };
 
+export function getWhisperRuntimeProfile(runtime = {}) {
+  const userAgent = runtime.userAgent ?? globalThis.navigator?.userAgent ?? "";
+  const platform = runtime.platform ?? globalThis.navigator?.platform ?? "";
+  const maxTouchPoints = runtime.maxTouchPoints ?? globalThis.navigator?.maxTouchPoints ?? 0;
+  const hasWebGPU = runtime.hasWebGPU ?? Boolean(globalThis.navigator?.gpu);
+  const isAppleMobile = /iPad|iPhone|iPod/i.test(userAgent)
+    || (/Mac/i.test(platform) && maxTouchPoints > 1);
+  return {
+    isAppleMobile,
+    recommendedModel: isAppleMobile ? "tiny" : "base",
+    device: isAppleMobile || !hasWebGPU ? "wasm" : "webgpu",
+  };
+}
+
 export function resampleTo16Khz(samples, sourceRate) {
   if (!samples.length || !sourceRate) return new Float32Array();
   if (sourceRate === 16_000) return samples;
@@ -46,6 +60,8 @@ export class WhisperSession {
     this.timer = null;
     this.running = false;
     this.busy = false;
+    this.ready = false;
+    this.failed = false;
     this.previous = "";
     this.requestId = 0;
   }
@@ -53,16 +69,27 @@ export class WhisperSession {
   start() {
     if (this.running) return;
     this.running = true;
-    this.worker = new Worker("./whisper-worker.js?v=12", { type: "module" });
+    this.ready = false;
+    this.failed = false;
+    try {
+      this.worker = new Worker("./whisper-worker.js?v=13", { type: "module" });
+    } catch {
+      this.fail(`${RECOGNITION_MODELS[this.model].label} could not start. Reload the app, then retry.`, "worker");
+      return;
+    }
     this.worker.addEventListener("message", (event) => this.handleMessage(event.data));
-    this.worker.addEventListener("error", () => this.onStatus?.("Local model could not start.", "error"));
+    this.worker.addEventListener("error", () => {
+      this.fail(`${RECOGNITION_MODELS[this.model].label} could not start. Check the connection, reload, and retry.`, "worker");
+    });
     this.worker.postMessage({ type: "load", model: this.model });
-    this.onStatus?.(`Loading ${RECOGNITION_MODELS[this.model].label}…`, "working");
+    const profile = getWhisperRuntimeProfile();
+    const deviceNote = profile.isAppleMobile ? " for iPhone" : "";
+    this.onStatus?.(`Loading ${RECOGNITION_MODELS[this.model].label}${deviceNote}… Keep this page open during the first download.`, "working");
     this.timer = window.setInterval(() => this.transcribe(), this.intervalMs);
   }
 
   transcribe() {
-    if (!this.running || this.busy || this.buffer.availableSeconds < 3) return;
+    if (!this.running || !this.ready || this.busy || this.buffer.availableSeconds < 3) return;
     const audio = resampleTo16Khz(this.buffer.takeLast(12), this.buffer.sampleRate);
     if (!audio.length) return;
     this.busy = true;
@@ -79,6 +106,7 @@ export class WhisperSession {
   handleMessage(message) {
     if (!this.running) return;
     if (message.type === "ready") {
+      this.ready = true;
       this.onStatus?.(`${RECOGNITION_MODELS[this.model].label} ready · ${message.device}.`, "ready");
       this.transcribe();
     } else if (message.type === "progress") {
@@ -90,13 +118,26 @@ export class WhisperSession {
       this.previous = message.text ?? "";
       if (text) this.onText?.(text);
     } else if (message.type === "error") {
-      this.busy = false;
-      this.onStatus?.(message.message, "error");
+      this.fail(message.message, message.code ?? "startup");
     }
+  }
+
+  fail(message, code) {
+    if (this.failed) return;
+    this.failed = true;
+    this.running = false;
+    this.ready = false;
+    this.busy = false;
+    window.clearInterval(this.timer);
+    this.timer = null;
+    this.worker?.terminate();
+    this.worker = null;
+    this.onStatus?.(message, "error", { code });
   }
 
   stop() {
     this.running = false;
+    this.ready = false;
     this.busy = false;
     window.clearInterval(this.timer);
     this.timer = null;

@@ -1,13 +1,13 @@
-import { BibleVerseReferenceDetector } from "./parser.js?v=12";
-import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=12";
-import { configureFeedbackUI } from "./feedback-ui.js?v=12";
-import { EXCERPTS } from "./excerpts.js?v=12";
-import { configureMicTest } from "./mic-test.js?v=12";
-import { configureMoreMenu } from "./more-menu.js?v=12";
-import { configureTranscriptLab } from "./transcript-lab.js?v=12";
-import { WhisperSession, RECOGNITION_MODELS } from "./whisper-session.js?v=12";
+import { BibleVerseReferenceDetector } from "./parser.js?v=13";
+import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=13";
+import { configureFeedbackUI } from "./feedback-ui.js?v=13";
+import { EXCERPTS } from "./excerpts.js?v=13";
+import { configureMicTest } from "./mic-test.js?v=13";
+import { configureMoreMenu } from "./more-menu.js?v=13";
+import { configureTranscriptLab } from "./transcript-lab.js?v=13";
+import { getWhisperRuntimeProfile, WhisperSession, RECOGNITION_MODELS } from "./whisper-session.js?v=13";
 
-const APP_VERSION = "2.4.0";
+const APP_VERSION = "2.4.1";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const LANGUAGE = {
   ru: { recognition: "ru-RU", name: "Russian", ready: "Ready to listen for Russian Bible references." },
@@ -33,6 +33,7 @@ const detector = new BibleVerseReferenceDetector(language);
 const rollingAudio = new RollingAudioBuffer(60);
 let recognition = null;
 let whisperSession = null;
+let whisperCleanupPending = false;
 let recognitionRunning = false;
 let wantsListening = false;
 let restartTimer = null;
@@ -58,7 +59,7 @@ function setMessage(message) {
 }
 
 function updateControls() {
-  const busy = Boolean(activeTestId);
+  const busy = Boolean(activeTestId) || whisperCleanupPending;
   elements.startButton.disabled = wantsListening || busy;
   elements.stopButton.disabled = !wantsListening && !busy;
   for (const button of elements.languageButtons) button.disabled = wantsListening || busy;
@@ -248,8 +249,22 @@ function startWhisper() {
         setPhase("Listening", "active");
         setMessage(`Listening locally with ${RECOGNITION_MODELS[model].label}…`);
       } else if (tone === "error") {
+        wantsListening = false;
+        whisperCleanupPending = true;
+        whisperSession?.stop();
+        whisperSession = null;
+        void rollingAudio.stop({ keepAudio: true }).finally(() => {
+          whisperCleanupPending = false;
+          updateControls();
+        });
+        if (wakeLock) {
+          void wakeLock.release().catch(() => {});
+          wakeLock = null;
+        }
+        elements.listenerIcon.textContent = "📖";
         setPhase("Needs attention", "error");
-        setMessage(message);
+        setMessage(`${message} Tap Start Listening to retry.`);
+        updateControls();
       } else {
         setPhase("Loading model", "active");
         setMessage(message);
@@ -480,7 +495,17 @@ elements.folderButton.addEventListener("click", () => toggleFolder(elements.exce
 elements.moreButton.addEventListener("click", () => elements.moreDialog.showModal());
 elements.closeMoreButton.addEventListener("click", () => elements.moreDialog.close());
 for (const button of elements.languageButtons) button.addEventListener("click", () => setLanguage(button.dataset.language));
-elements.recognitionModel.value = localStorage.getItem("verse-recognition-model") || "base";
+const whisperProfile = getWhisperRuntimeProfile();
+const savedRecognitionModel = localStorage.getItem("verse-recognition-model");
+elements.recognitionModel.value = whisperProfile.isAppleMobile && (!savedRecognitionModel || savedRecognitionModel === "base" || savedRecognitionModel === "small")
+  ? "tiny"
+  : savedRecognitionModel || whisperProfile.recommendedModel;
+if (whisperProfile.isAppleMobile) {
+  elements.recognitionModel.querySelector('option[value="tiny"]').textContent = "Whisper Tiny · Recommended for iPhone";
+  elements.recognitionModel.querySelector('option[value="base"]').textContent = "Whisper Base · Heavy on iPhone";
+  elements.recognitionModel.querySelector('option[value="small"]').textContent = "Whisper Small · Desktop only";
+  elements.recognitionModelStatus.textContent = "iPhone uses the memory-safe Whisper Tiny WebAssembly model. Its first download may take a minute.";
+}
 elements.recognitionModel.addEventListener("change", () => {
   localStorage.setItem("verse-recognition-model", elements.recognitionModel.value);
   elements.recognitionModelStatus.textContent = elements.recognitionModel.value === "browser"
@@ -525,5 +550,5 @@ renderExcerpts();
 void feedbackUI.flush();
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=12").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=13").catch(() => {}));
 }

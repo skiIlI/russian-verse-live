@@ -2,7 +2,7 @@
 
 A free, browser-only Bible reference listener for Russian and English sermons.
 
-[Open the live app](https://skiili.github.io/russian-verse-live/?v=12)
+[Open the live app](https://skiili.github.io/russian-verse-live/?v=13)
 
 ## Use it
 

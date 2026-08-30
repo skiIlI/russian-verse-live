@@ -1,4 +1,4 @@
-import { deleteFeedbackReport, listFeedbackReports } from "./feedback-store.js?v=12";
+import { deleteFeedbackReport, listFeedbackReports } from "./feedback-store.js?v=13";
 
 export const FEEDBACK_ENDPOINT = "https://qufljdidcmezwqwuezkh.supabase.co/functions/v1/verse-feedback";
 

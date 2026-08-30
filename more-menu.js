@@ -1,4 +1,4 @@
-import { downloadCurrentSourceContext } from "./source-context.js?v=12";
+import { downloadCurrentSourceContext } from "./source-context.js?v=13";
 
 export function configureMoreMenu(elements) {
   let installPrompt = null;

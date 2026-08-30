@@ -1,5 +1,5 @@
-import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=12";
-import { WhisperSession, RECOGNITION_MODELS } from "./whisper-session.js?v=12";
+import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=13";
+import { WhisperSession, RECOGNITION_MODELS } from "./whisper-session.js?v=13";
 
 export function clockTime(seconds) {
   const total = Math.max(0, Math.floor(seconds || 0));
