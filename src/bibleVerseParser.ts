@@ -46,11 +46,11 @@ type VerseRange = { verseStart: number; verseEnd?: number };
 const CONTEXT_TTL_MS = 6 * 60 * 60 * 1000;
 const DUPLICATE_TTL_MS = 20 * 1000;
 const CHAPTER_LABELS: Record<SupportedLanguage, RegExp> = {
-  ru: /глав(?:а|ы|е|у|ой|ою)/g,
+  ru: /глав(?:а|ы|е|у|ой|ою)|розд(?:іл|ілу|ілі|ілом)/g,
   en: /chapters?/g,
 };
 const VERSE_LABELS: Record<SupportedLanguage, RegExp> = {
-  ru: /стих(?:а|е|и|ов|ом)?/g,
+  ru: /стих(?:а|е|и|ов|ом)?|текст(?:у|і|ом)?/g,
   en: /verses?/g,
 };
 const RANGE_CONNECTORS: Record<SupportedLanguage, Set<string>> = {
@@ -59,7 +59,7 @@ const RANGE_CONNECTORS: Record<SupportedLanguage, Set<string>> = {
 };
 
 function isWordCharacter(character: string | undefined): boolean {
-  return Boolean(character && /[а-яa-z0-9]/.test(character));
+  return Boolean(character && /[\p{L}\p{N}]/u.test(character));
 }
 
 function hasTokenBoundaries(text: string, index: number, length: number): boolean {
@@ -80,7 +80,7 @@ function levenshteinDistance(left: string, right: string): number {
 }
 
 function tokenSpans(text: string): Array<{ value: string; index: number; end: number }> {
-  return [...text.matchAll(/[а-яa-z0-9]+/g)].map((match) => ({
+  return [...text.matchAll(/[\p{L}\p{N}]+/gu)].map((match) => ({
     value: match[0],
     index: match.index ?? 0,
     end: (match.index ?? 0) + match[0].length,
@@ -174,6 +174,7 @@ function rangeFromTokens(words: string[], language: SupportedLanguage, preferLea
     const verseStart = parseTrailingNumber(words.slice(0, index), language);
     const verseEnd = parseLeadingNumber(words.slice(index + 1), language);
     if (verseStart && verseEnd && verseEnd >= verseStart) return { verseStart, verseEnd };
+    if (verseStart && !verseEnd) return { verseStart };
   }
   const verseStart = preferLeading
     ? parseLeadingNumber(words, language) ?? parseTrailingNumber(words, language)
@@ -194,11 +195,11 @@ function explicitColonReference(text: string, match: BookMatch | null): { chapte
   const searchText = match ? text.slice(match.end, match.end + 100) : text;
   const found = searchText.match(/(?:chapter\s*)?(\d{1,3})\s*[:.]\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?/);
   if (!found) return null;
-  return {
-    chapter: Number(found[1]),
-    verseStart: Number(found[2]),
-    verseEnd: found[3] ? Number(found[3]) : undefined,
-  };
+  const chapter = Number(found[1]);
+  const verseStart = Number(found[2]);
+  const verseEnd = found[3] ? Number(found[3]) : undefined;
+  if (chapter < 1 || verseStart < 1 || (verseEnd !== undefined && verseEnd < 1)) return null;
+  return { chapter, verseStart, verseEnd };
 }
 
 function unlabelledBookPair(text: string, match: BookMatch, language: SupportedLanguage): [number, number] | null {

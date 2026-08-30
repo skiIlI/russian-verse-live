@@ -1,10 +1,12 @@
 {
   "name": "russian-verse-live",
-  "version": "2.1.0",
+  "version": "2.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "compile:parser": "npx --yes esbuild src/bibleVerseParser.ts --bundle --format=esm --platform=browser --outfile=parser.js",
-    "test": "node tests/parser.test.mjs && node tests/audio-buffer.test.mjs && node tests/feedback.test.mjs && node tests/static.test.mjs"
+    "compile:interpreter": "npx --yes esbuild src/transcriptInterpreter.ts --bundle --format=esm --platform=browser --outfile=interpreter.js",
+    "build:corpus": "node scripts/build-bible-corpus.mjs",
+    "test": "node tests/parser.test.mjs && node tests/interpreter.test.mjs && node tests/audio-buffer.test.mjs && node tests/feedback.test.mjs && node tests/mic-test.test.mjs && node tests/static.test.mjs"
   }
 }

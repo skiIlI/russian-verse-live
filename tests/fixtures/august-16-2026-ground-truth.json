@@ -1,0 +1,68 @@
+{
+  "service": {
+    "date": "2026-08-16",
+    "youtube": "https://www.youtube.com/watch?v=Y5bbaQmyXKI",
+    "transcript": "transcripts/0000 secondsлет назад. Это было вче.txt",
+    "policy": "Russian Synodal numbering; sermon-focused analysis excludes prayer and music by default. Repeated readings remain separate occurrences."
+  },
+  "sections": [
+    {
+      "id": "psalm-22-sermon",
+      "startSeconds": 103,
+      "endSeconds": 445,
+      "readings": [
+        "1:50|Psalms 22:1",
+        "1:57|Psalms 22:2",
+        "2:04|Psalms 22:3",
+        "2:04|Psalms 22:4",
+        "2:13|Psalms 22:5",
+        "2:27|Psalms 22:6",
+        "4:17|Psalms 22:3",
+        "4:45|Psalms 22:4",
+        "5:24|Psalms 22:5",
+        "6:58|1 Peter 5:8",
+        "7:25|Psalms 22:6"
+      ],
+      "references": [
+        "1:43|SET_CONTEXT|Psalms 22",
+        "4:17|NEXT_VERSE|Psalms 22:3",
+        "4:45|GO_TO_VERSE|Psalms 22:4",
+        "5:24|GO_TO_VERSE|Psalms 22:5"
+      ]
+    },
+    {
+      "id": "love-sermon",
+      "startSeconds": 2560,
+      "endSeconds": 3051,
+      "readings": [
+        "43:15|Matthew 22:34",
+        "43:20|Matthew 22:35",
+        "43:20|Matthew 22:36",
+        "43:29|Matthew 22:37",
+        "43:37|Matthew 22:38",
+        "43:41|Matthew 22:39",
+        "43:46|Matthew 22:40",
+        "44:15|Deuteronomy 6:5",
+        "45:43|Matthew 22:39",
+        "46:47|Matthew 7:9",
+        "46:47|Matthew 7:10",
+        "46:57|Matthew 7:11",
+        "47:05|Matthew 7:12",
+        "48:18|Matthew 22:39",
+        "48:56|1 John 4:19",
+        "49:04|1 John 4:20",
+        "49:12|1 John 4:21",
+        "50:31|1 Corinthians 13:1",
+        "50:40|1 Corinthians 13:2",
+        "50:51|1 Corinthians 13:3"
+      ],
+      "references": [
+        "42:40|OPEN_VERSE|Matthew 22:34–40",
+        "44:05|OPEN_VERSE|Deuteronomy 6:5",
+        "46:17|OPEN_VERSE|Matthew 7:9–12",
+        "48:27|OPEN_VERSE|1 John 4:19–21",
+        "49:55|OPEN_VERSE|1 Corinthians 13:1–3"
+      ]
+    }
+  ]
+}

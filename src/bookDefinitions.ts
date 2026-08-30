@@ -27,7 +27,7 @@ const book = (
 });
 
 export const BOOKS: BookDefinition[] = [
-  book("genesis", "Genesis", 50, "Бытие", ["книга бытие", "бытие", "бытия", "бте"], ["book of genesis", "genesis", "gen"]),
+  book("genesis", "Genesis", 50, "Бытие", ["книга бытие", "книга буття", "бытие", "бытия", "буття", "бте"], ["book of genesis", "genesis", "gen"]),
   book("exodus", "Exodus", 40, "Исход", ["книга исход", "исход"], ["book of exodus", "exodus", "exod"]),
   book("leviticus", "Leviticus", 27, "Левит", ["книга левит", "левита", "левит"], ["leviticus", "lev"]),
   book("numbers", "Numbers", 36, "Числа", ["книга чисел", "чисел", "числа"], ["book of numbers", "numbers", "num"]),
@@ -66,7 +66,7 @@ export const BOOKS: BookDefinition[] = [
   book("haggai", "Haggai", 2, "Аггей", ["книга аггея", "аггея", "аггей"], ["book of haggai", "haggai", "hag"]),
   book("zechariah", "Zechariah", 14, "Захария", ["книга захарии", "захарии", "захария"], ["book of zechariah", "zechariah", "zech"]),
   book("malachi", "Malachi", 4, "Малахия", ["книга малахии", "малахии", "малахия"], ["book of malachi", "malachi", "mal"], 4),
-  book("matthew", "Matthew", 28, "От Матфея", ["евангелие от матфея", "евангелие от матвея", "от матфея", "от матвея", "матфея", "матфею", "матфей", "матвея", "матвею", "матвей", "матея"], ["gospel according to matthew", "gospel of matthew", "matthew", "mathew", "mattew"]),
+  book("matthew", "Matthew", 28, "От Матфея", ["евангелие от матфея", "евангелие от матвея", "євангелія від матвія", "от матфея", "от матвея", "матфея", "матфею", "матфей", "матвея", "матвею", "матвей", "матвія", "матея"], ["gospel according to matthew", "gospel of matthew", "matthew", "mathew", "mattew"]),
   book("mark", "Mark", 16, "От Марка", ["евангелие от марка", "от марка", "марка", "марк"], ["gospel according to mark", "gospel of mark", "mark"]),
   book("luke", "Luke", 24, "От Луки", ["евангелие от луки", "от луки", "лукой", "луки", "лука"], ["gospel according to luke", "gospel of luke", "luke"]),
   book("john", "John", 21, "От Иоанна", ["евангелие от иоанна", "от иоанна", "иоанна", "иоанн"], ["gospel according to john", "gospel of john", "john"]),
@@ -84,7 +84,7 @@ export const BOOKS: BookDefinition[] = [
   book("2-timothy", "2 Timothy", 4, "2 Тимофею", ["второе послание к тимофею", "второе тимофею", "2 тимофею"], ["second timothy", "2nd timothy", "2 timothy"]),
   book("titus", "Titus", 3, "К Титу", ["послание к титу", "к титу", "титу"], ["letter to titus", "titus"]),
   book("philemon", "Philemon", 1, "К Филимону", ["послание к филимону", "к филимону", "филимону"], ["letter to philemon", "philemon", "philem"], 1),
-  book("hebrews", "Hebrews", 13, "К Евреям", ["послание к евреям", "к евреям", "евреям"], ["letter to the hebrews", "book of hebrews", "hebrews", "heb"]),
+  book("hebrews", "Hebrews", 13, "К Евреям", ["послание к евреям", "к евреям", "евреям", "євреям"], ["letter to the hebrews", "book of hebrews", "hebrews", "heb"]),
   book("james", "James", 5, "Иакова", ["послание иакова", "иакова", "иаков"], ["letter of james", "book of james", "james"]),
   book("1-peter", "1 Peter", 5, "1 Петра", ["первое послание петра", "первое петра", "1 петра"], ["first peter", "1st peter", "1 peter"]),
   book("2-peter", "2 Peter", 3, "2 Петра", ["второе послание петра", "второе петра", "2 петра"], ["second peter", "2nd peter", "2 peter"]),

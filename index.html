@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="stylesheet" href="styles.css?v=8" />
 </head>
 <body>
   <main class="app-shell">
@@ -69,6 +69,98 @@
           <h3 id="transcriptLabel">Live transcript</h3>
           <div id="transcriptList" class="transcript-list" aria-live="polite" aria-label="Live speech transcript">
             <p class="empty-line">No transcript yet.</p>
+          </div>
+        </section>
+
+        <section id="micTestSection" class="folder-section mic-test-section" data-state="idle">
+          <button id="micTestFolderButton" class="folder-button" type="button" aria-expanded="false">
+            <span class="folder-icon" aria-hidden="true">🎚️</span>
+            <span class="folder-title">Mic &amp; recording test</span>
+            <span id="micTestSummary" class="folder-count">Off</span>
+            <span class="chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div id="micTestContent" class="folder-content mic-test-content" hidden>
+            <p class="mic-test-intro">Check the room input, listen live, or record a short playback test. Use headphones before monitoring to prevent feedback.</p>
+
+            <div class="mic-meter-heading">
+              <span>Input level</span>
+              <strong id="micLevelText">0%</strong>
+            </div>
+            <div id="micLevelMeter" class="mic-level-meter" role="meter" aria-label="Microphone input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+
+            <p id="micTestStatus" class="mic-test-status" aria-live="polite"></p>
+            <div class="mic-test-actions mic-test-actions-primary">
+              <button id="startMicButton" class="mic-control start" type="button">Start mic</button>
+              <button id="stopMicButton" class="mic-control stop" type="button" disabled>Stop mic</button>
+            </div>
+            <div class="mic-test-actions mic-test-actions-secondary">
+              <button id="monitorMicButton" class="mic-control monitor" type="button" aria-pressed="false" disabled>Monitor input</button>
+              <button id="recordMicButton" class="mic-control record" type="button">Record</button>
+              <button id="stopRecordingButton" class="mic-control stop-recording" type="button" disabled>Stop recording</button>
+            </div>
+
+            <audio id="liveMonitorAudio" playsinline></audio>
+            <div id="micRecordingResult" class="mic-recording-result" hidden>
+              <div class="mic-recording-heading">
+                <strong>Playback</strong>
+                <span id="micRecordingMeta"></span>
+              </div>
+              <audio id="micRecordingPlayback" controls playsinline preload="metadata" aria-label="Recorded microphone test playback"></audio>
+              <button id="discardRecordingButton" class="discard-recording" type="button">Discard recording</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="transcriptLabSection" class="folder-section transcript-lab-section">
+          <button id="transcriptLabButton" class="folder-button" type="button" aria-expanded="false">
+            <span class="folder-icon transcript-lab-icon" aria-hidden="true">⌁</span>
+            <span class="folder-title">Transcript interpreter</span>
+            <span id="transcriptLabCount" class="folder-count">Ready</span>
+            <span class="chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div id="transcriptLabContent" class="folder-content transcript-lab-content" hidden>
+            <p class="transcript-lab-intro">Paste a sermon transcript to detect references, quoted verses, and spoken or inferred next/back commands.</p>
+
+            <div class="analysis-language-switch" role="group" aria-label="Transcript language">
+              <button class="analysis-language active" type="button" data-analysis-language="ru" aria-pressed="true">Русский · Synodal</button>
+              <button class="analysis-language" type="button" data-analysis-language="en" aria-pressed="false">English · NASB profile</button>
+            </div>
+
+            <label class="analysis-focus-option">
+              <input id="analysisFocusSermons" type="checkbox" checked />
+              <span><strong>Focus on sermon speech</strong><small>Ignore detected prayers and music</small></span>
+            </label>
+
+            <label class="analysis-input-label" for="analysisTranscript">Transcript</label>
+            <textarea id="analysisTranscript" class="analysis-textarea" rows="9" spellcheck="false" placeholder="Paste timestamped or plain transcript text…"></textarea>
+
+            <div class="analysis-actions">
+              <button id="loadServiceTranscript" class="analysis-secondary" type="button">Load Aug 16 service</button>
+              <button id="analyzeTranscript" class="analysis-primary" type="button">Detect verses</button>
+            </div>
+            <p id="analysisStatus" class="analysis-status" aria-live="polite">Russian and English corpora load only when analysis starts.</p>
+
+            <div id="analysisResult" class="analysis-result" hidden>
+              <div class="analysis-summary" aria-label="Analysis summary">
+                <span><strong id="analysisReadingCount">0</strong> readings</span>
+                <span><strong id="analysisReferenceCount">0</strong> references</span>
+                <span><strong id="analysisNavigationCount">0</strong> moves</span>
+                <span><strong id="analysisUniqueCount">0</strong> unique</span>
+              </div>
+
+              <div class="analysis-view-toolbar">
+                <div class="analysis-view-switch" role="tablist" aria-label="Output format">
+                  <button class="analysis-view active" type="button" role="tab" data-analysis-view="report" aria-selected="true">Report</button>
+                  <button class="analysis-view" type="button" role="tab" data-analysis-view="console" aria-selected="false">Console</button>
+                  <button class="analysis-view" type="button" role="tab" data-analysis-view="annotated" aria-selected="false">Annotated</button>
+                </div>
+                <button id="copyAnalysisOutput" class="analysis-copy" type="button">Copy</button>
+              </div>
+              <div id="analysisOutput" class="analysis-output"></div>
+            </div>
           </div>
         </section>
 
@@ -144,6 +236,6 @@
   </dialog>
 
   <noscript>This listener requires JavaScript.</noscript>
-  <script type="module" src="app.js?v=5"></script>
+  <script type="module" src="app.js?v=8"></script>
 </body>
 </html>

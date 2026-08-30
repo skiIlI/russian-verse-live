@@ -1,5 +1,5 @@
-import { flushFeedbackQueue } from "./feedback-api.js?v=5";
-import { saveFeedbackReport } from "./feedback-store.js?v=5";
+import { flushFeedbackQueue } from "./feedback-api.js?v=6";
+import { saveFeedbackReport } from "./feedback-store.js?v=6";
 
 export function configureFeedbackUI({ elements, createReport, readPreview }) {
   let activeFlush = null;

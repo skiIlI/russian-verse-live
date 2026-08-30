@@ -459,6 +459,610 @@ var BibleVerseReferenceDetector = class {
     }];
   }
 };
+
+// src/navigationDetector.ts
+var NEXT = {
+  ru: [
+    /следующ\p{L}*\s+(?:стих|текст)/u,
+    /(?:перейд|переход)\p{L}*\s+(?:к\s+)?следующ/u,
+    /(?:дальше|далее)\s+(?:чита|стих|текст)/u
+  ],
+  en: [/next\s+(?:verse|text|passage)/, /(?:move|go|continue)\s+(?:on\s+)?to\s+the\s+next/]
+};
+var PREVIOUS = {
+  ru: [
+    /предыдущ\p{L}*\s+(?:стих|текст)/u,
+    /(?:верн|возврат)\p{L}*\s+(?:назад\s+)?(?:к|на)\s+(?:предыдущ|прошл)/u
+  ],
+  en: [/previous\s+(?:verse|text|passage)/, /(?:go|move|come)\s+back\s+to\s+the\s+(?:previous|last)\s+verse/]
+};
+function detectNavigationIntent(text, language) {
+  const normalized = normalizeText(text);
+  if (NEXT[language].some((pattern) => pattern.test(normalized))) return "next";
+  if (PREVIOUS[language].some((pattern) => pattern.test(normalized))) return "previous";
+  return null;
+}
+
+// src/verseCorpus.ts
+var STOP_WORDS = {
+  ru: /* @__PURE__ */ new Set(["\u0430", "\u0431\u0435\u0437", "\u0431\u044B", "\u0432", "\u0432\u043E", "\u0432\u043E\u0442", "\u0432\u0441\u0435", "\u0434\u043B\u044F", "\u0434\u043E", "\u0435\u0433\u043E", "\u0435\u0435", "\u0436\u0435", "\u0437\u0430", "\u0438", "\u0438\u0437", "\u0438\u043B\u0438", "\u0438\u0445", "\u043A", "\u043A\u0430\u043A", "\u043A\u043E", "\u043C\u043D\u0435", "\u043C\u044B", "\u043D\u0430", "\u043D\u0435", "\u043D\u043E", "\u043E", "\u043E\u0431", "\u043E\u043D", "\u043E\u043D\u0430", "\u043E\u043D\u0438", "\u043E\u0442", "\u043F\u043E", "\u043F\u0440\u0438", "\u0441", "\u0441\u043E", "\u0442\u0430\u043A", "\u0442\u043E", "\u0443", "\u0447\u0442\u043E", "\u044D\u0442\u043E", "\u044F"]),
+  en: /* @__PURE__ */ new Set(["a", "all", "and", "are", "as", "at", "be", "but", "by", "for", "from", "had", "has", "have", "he", "her", "him", "his", "i", "in", "is", "it", "me", "my", "not", "of", "on", "or", "our", "she", "so", "that", "the", "their", "them", "they", "this", "to", "was", "we", "were", "will", "with", "you", "your"])
+};
+var RU_SUFFIXES = ["\u0438\u044F\u043C\u0438", "\u044F\u043C\u0438", "\u0430\u043C\u0438", "\u043E\u0433\u043E", "\u0435\u043C\u0443", "\u043E\u043C\u0443", "\u0438\u043C\u0438", "\u044B\u043C\u0438", "\u0435\u0433\u043E", "\u0443\u044E", "\u044E\u044E", "\u0430\u044F", "\u044F\u044F", "\u044B\u0435", "\u0438\u0435", "\u044B\u0439", "\u0438\u0439", "\u043E\u0439", "\u0430\u043C", "\u044F\u043C", "\u0430\u0445", "\u044F\u0445", "\u043E\u0432", "\u0435\u0432", "\u043E\u043C", "\u0435\u043C", "\u0438\u043C", "\u044B\u043C", "\u0438\u0445", "\u044B\u0445", "\u0438\u044E", "\u044C\u044E", "\u0438\u044F", "\u0435\u0439", "\u043E\u044E", "\u0435\u044E", "\u044B", "\u0438", "\u0430", "\u044F", "\u0443", "\u044E", "\u0435", "\u043E"];
+var EN_SUFFIXES = ["ingly", "edly", "ing", "ies", "ied", "ed", "es", "s"];
+var EN_EQUIVALENTS = {
+  tongu: "speech",
+  languag: "speech",
+  resound: "sound",
+  sound: "sound",
+  bras: "gong",
+  gong: "gong",
+  fathom: "understand",
+  know: "understand",
+  remov: "move",
+  remove: "move",
+  move: "move"
+};
+function normalizeForMatching(text) {
+  return text.normalize("NFKD").toLocaleLowerCase().replace(/[\u0300-\u036f]/g, "").replaceAll("\u0451", "\u0435").replaceAll("\u0456", "\u0438").replaceAll("\u0457", "\u0438").replaceAll("\u0454", "\u0435").replaceAll("\u0491", "\u0433").replace(/[’']/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").replace(/\s+/g, " ").trim();
+}
+function stem(token, language) {
+  const suffixes = language === "ru" ? RU_SUFFIXES : EN_SUFFIXES;
+  for (const suffix of suffixes) {
+    if (token.endsWith(suffix) && token.length - suffix.length >= 4) {
+      const stemmed = token.slice(0, -suffix.length);
+      return language === "en" ? EN_EQUIVALENTS[stemmed] ?? stemmed : stemmed;
+    }
+  }
+  return language === "en" ? EN_EQUIVALENTS[token] ?? token : token;
+}
+function matchingTokens(text, language, meaningfulOnly = false) {
+  const raw = normalizeForMatching(text).match(/[\p{L}\p{N}]+/gu) ?? [];
+  return raw.filter((token) => !meaningfulOnly || token.length >= 3 && !STOP_WORDS[language].has(token)).map((token) => stem(token, language));
+}
+var VerseCorpusIndex = class {
+  language;
+  document;
+  verses;
+  postings = /* @__PURE__ */ new Map();
+  byChapter = /* @__PURE__ */ new Map();
+  byKey = /* @__PURE__ */ new Map();
+  constructor(document) {
+    this.document = document;
+    this.language = document.language;
+    this.verses = document.verses.map(([bookId, chapter, verse, text], index) => ({
+      index,
+      key: `${bookId}:${chapter}:${verse}`,
+      bookId,
+      chapter,
+      verse,
+      text,
+      tokens: matchingTokens(text, document.language),
+      meaningful: matchingTokens(text, document.language, true)
+    }));
+    const frequency = /* @__PURE__ */ new Map();
+    for (const verse of this.verses) {
+      this.byKey.set(verse.key, verse);
+      const chapterKey = `${verse.bookId}:${verse.chapter}`;
+      const chapter = this.byChapter.get(chapterKey) ?? [];
+      chapter.push(verse.index);
+      this.byChapter.set(chapterKey, chapter);
+      for (const token of new Set(verse.meaningful)) frequency.set(token, (frequency.get(token) ?? 0) + 1);
+    }
+    for (const verse of this.verses) {
+      for (const token of new Set(verse.meaningful)) {
+        if ((frequency.get(token) ?? 0) > 1200) continue;
+        const entries = this.postings.get(token) ?? [];
+        entries.push(verse.index);
+        this.postings.set(token, entries);
+      }
+    }
+  }
+  chapter(bookId, chapter) {
+    if (!bookId || !chapter) return [];
+    return (this.byChapter.get(`${bookId}:${chapter}`) ?? []).map((index) => this.verses[index]);
+  }
+};
+var CORPUS_PATHS = {
+  ru: "./data/russyn.json",
+  en: "./data/engwebp.json"
+};
+var cache = /* @__PURE__ */ new Map();
+function loadVerseCorpus(language, fetcher = fetch) {
+  const existing = cache.get(language);
+  if (existing) return existing;
+  const pending = fetcher(CORPUS_PATHS[language]).then((response) => {
+    if (!response.ok) throw new Error(`Bible corpus returned ${response.status}`);
+    return response.json();
+  }).then((document) => new VerseCorpusIndex(document));
+  cache.set(language, pending);
+  pending.catch(() => cache.delete(language));
+  return pending;
+}
+
+// src/quoteScoring.ts
+function closeToken(left, right) {
+  if (left === right) return true;
+  if (Math.min(left.length, right.length) < 4 || Math.abs(left.length - right.length) > 1) return false;
+  let differences = 0;
+  let leftIndex = 0;
+  let rightIndex = 0;
+  while (leftIndex < left.length && rightIndex < right.length) {
+    if (left[leftIndex] === right[rightIndex]) {
+      leftIndex += 1;
+      rightIndex += 1;
+      continue;
+    }
+    differences += 1;
+    if (differences > 1) return false;
+    if (left.length > right.length) leftIndex += 1;
+    else if (right.length > left.length) rightIndex += 1;
+    else {
+      leftIndex += 1;
+      rightIndex += 1;
+    }
+  }
+  return differences + Number(leftIndex < left.length || rightIndex < right.length) <= 1;
+}
+function overlapCount(reference, observed) {
+  const remaining = [...observed];
+  let count = 0;
+  for (const token of reference) {
+    const index = remaining.findIndex((candidate) => closeToken(token, candidate));
+    if (index < 0) continue;
+    count += 1;
+    remaining.splice(index, 1);
+  }
+  return count;
+}
+function orderedCount(reference, observed) {
+  const previous = new Uint16Array(observed.length + 1);
+  for (const referenceToken of reference) {
+    const current = new Uint16Array(observed.length + 1);
+    for (let index = 1; index <= observed.length; index += 1) {
+      current[index] = closeToken(referenceToken, observed[index - 1]) ? previous[index - 1] + 1 : Math.max(current[index - 1], previous[index]);
+    }
+    previous.set(current);
+  }
+  return previous[observed.length];
+}
+function longestOrderedRun(reference, observed) {
+  let longest = 0;
+  for (let left = 0; left < reference.length; left += 1) {
+    for (let right = 0; right < observed.length; right += 1) {
+      let run = 0;
+      while (left + run < reference.length && right + run < observed.length && closeToken(reference[left + run], observed[right + run])) run += 1;
+      longest = Math.max(longest, run);
+    }
+  }
+  return longest;
+}
+function scoreQuote(reference, observed, { contextual = false, cued = false } = {}) {
+  if (reference.length < 3 || observed.length < 3) return null;
+  const matched = overlapCount(reference, observed);
+  const orderedMatched = orderedCount(reference, observed);
+  const longestRun = longestOrderedRun(reference, observed);
+  const coverage = matched / reference.length;
+  const ordered = orderedMatched / reference.length;
+  const runBonus = Math.min(0.12, Math.max(0, longestRun - 3) * 0.03);
+  const score = coverage * 0.66 + ordered * 0.34 + runBonus + (contextual ? 0.035 : 0) + (cued ? 0.02 : 0);
+  const minimumMatched = reference.length <= 5 ? 3 : reference.length <= 11 ? 4 : 6;
+  const baseCoverage = reference.length <= 5 ? 0.78 : reference.length <= 11 ? 0.6 : 0.48;
+  const minimumCoverage = contextual || cued ? baseCoverage : Math.max(0.66, baseCoverage);
+  const minimumScore = contextual ? 0.55 : cued ? 0.6 : 0.76;
+  if (matched < minimumMatched || coverage < minimumCoverage || score < minimumScore) return null;
+  return { score: Math.min(0.99, score), coverage, ordered, matched };
+}
+
+// src/quoteMatcher.ts
+function candidateIndices(windowTokens, corpus, context) {
+  const candidates = /* @__PURE__ */ new Map();
+  for (const token of new Set(windowTokens)) {
+    for (const index of corpus.postings.get(token) ?? []) {
+      const current = candidates.get(index) ?? { anchors: 0, contextual: false };
+      current.anchors += 1;
+      candidates.set(index, current);
+    }
+  }
+  for (const verse of corpus.chapter(context?.bookId ?? null, context?.chapter ?? null)) {
+    if (context?.verseStart && (verse.verse < context.verseStart || verse.verse > (context.verseEnd ?? context.verseStart))) continue;
+    const current = candidates.get(verse.index) ?? { anchors: 0, contextual: true };
+    current.contextual = true;
+    candidates.set(verse.index, current);
+  }
+  return candidates;
+}
+function hasQuoteCue(text, language) {
+  const normalized = text.toLocaleLowerCase();
+  return language === "ru" ? /писан|библи|слово.{0,30}говор|чита(?:ем|ю|ть)|прочита|зачита|стих|текст/u.test(normalized) : /scripture|bible|(?:the\s+)?word.{0,24}says?|(?:we\s+)?read|written|verse/.test(normalized);
+}
+function alignedWithContext(match, context) {
+  if (!context?.bookId || !context.chapter) return false;
+  if (match.verse.bookId !== context.bookId || match.verse.chapter !== context.chapter) return false;
+  if (!context.verseStart) return true;
+  return match.verse.verse >= context.verseStart && match.verse.verse <= (context.verseEnd ?? context.verseStart);
+}
+function preferContext(matches, contexts) {
+  return matches.filter((match) => {
+    const context = contexts[match.segmentIndex];
+    if (!context?.bookId) return true;
+    if (alignedWithContext(match, context)) {
+      const strongerAlternative2 = matches.find((candidate) => candidate.segmentIndex === match.segmentIndex && !alignedWithContext(candidate, context) && candidate.score > match.score + 0.04);
+      return !strongerAlternative2;
+    }
+    const contextualWinner = matches.find((candidate) => candidate.segmentIndex === match.segmentIndex && alignedWithContext(candidate, context) && candidate.score >= match.score - 0.03);
+    if (contextualWinner) return false;
+    const strongerAlternative = matches.find((candidate) => candidate.segmentIndex === match.segmentIndex && candidate.score > match.score + 0.04);
+    return !strongerAlternative;
+  });
+}
+function bestSourceSegment(segments, start, end, verse, language) {
+  const verseTokens = new Set(verse.meaningful);
+  let bestIndex = start;
+  let bestHits = -1;
+  for (let index = start; index <= end; index += 1) {
+    const hits = matchingTokens(segments[index].text, language, true).filter((token) => verseTokens.has(token)).length;
+    if (hits > bestHits) {
+      bestHits = hits;
+      bestIndex = index;
+    }
+  }
+  return bestIndex;
+}
+function collapseOverlapping(matches) {
+  const byVerse = /* @__PURE__ */ new Map();
+  for (const match of matches) {
+    const entries = byVerse.get(match.verse.key) ?? [];
+    entries.push(match);
+    byVerse.set(match.verse.key, entries);
+  }
+  const collapsed = [];
+  for (const entries of byVerse.values()) {
+    entries.sort((left, right) => left.segmentIndex - right.segmentIndex || right.score - left.score);
+    let cluster = [];
+    const flush = () => {
+      if (!cluster.length) return;
+      collapsed.push(cluster.sort((left, right) => right.score - left.score || left.segmentIndex - right.segmentIndex)[0]);
+      cluster = [];
+    };
+    for (const entry of entries) {
+      const lastEnd = cluster.reduce((maximum, item) => Math.max(maximum, item.endSegmentIndex), -1);
+      if (cluster.length && entry.segmentIndex > lastEnd + 1) flush();
+      cluster.push(entry);
+    }
+    flush();
+  }
+  return collapsed.sort((left, right) => left.segmentIndex - right.segmentIndex || left.verse.index - right.verse.index);
+}
+function matchQuotedVerses(segments, corpus, contexts, { ignoreMusic = true, ignorePrayer = true, maxWindow = 4 } = {}) {
+  const matches = [];
+  for (let start = 0; start < segments.length; start += 1) {
+    if (ignoreMusic && segments[start].isMusic) continue;
+    if (ignorePrayer && segments[start].isPrayer) continue;
+    for (let end = start; end < Math.min(segments.length, start + maxWindow); end += 1) {
+      if (ignoreMusic && segments[end].isMusic) break;
+      if (ignorePrayer && segments[end].isPrayer) break;
+      const sourceText = segments.slice(start, end + 1).map((segment) => segment.text).join(" ");
+      const windowTokens = matchingTokens(sourceText, corpus.language, true);
+      if (windowTokens.length < 3 || windowTokens.length > 95) continue;
+      for (const [verseIndex, candidate] of candidateIndices(windowTokens, corpus, contexts[start])) {
+        const verse = corpus.verses[verseIndex];
+        const activeContext = contexts[start];
+        if (activeContext?.verseStart && activeContext.verseEnd !== void 0 && verse.bookId === activeContext.bookId && verse.chapter === activeContext.chapter && (verse.verse < activeContext.verseStart || verse.verse > (activeContext.verseEnd ?? activeContext.verseStart))) continue;
+        const minimumAnchors = verse.meaningful.length <= 6 ? 2 : 3;
+        if (!candidate.contextual && candidate.anchors < minimumAnchors) continue;
+        const segmentIndex = bestSourceSegment(segments, start, end, verse, corpus.language);
+        const cued = hasQuoteCue(segments[segmentIndex].text, corpus.language);
+        if (!candidate.contextual && !cued && verse.meaningful.length < 6) continue;
+        const scored = scoreQuote(verse.meaningful, windowTokens, { contextual: candidate.contextual, cued });
+        if (!scored) continue;
+        matches.push({
+          verse,
+          segmentIndex,
+          endSegmentIndex: end,
+          score: scored.score,
+          coverage: scored.coverage,
+          sourceText
+        });
+      }
+    }
+  }
+  return preferContext(collapseOverlapping(matches), contexts);
+}
+
+// src/transcriptInput.ts
+var CLOCK_PREFIX = /^(\d{1,2}(?::\d{2}){1,2})/;
+var SPOKEN_DURATION = /^(?:(?:\d+\s+hours?)(?:,\s*)?)?(?:(?:\d+\s+minutes?)(?:,\s*)?)?(?:\d+\s+seconds?)?/i;
+var MUSIC_MARKERS = /\[(?:music|singing|song|музыка|пение|песня)\]/i;
+var PRAYER_START = /давайте.*(?:помол|молит)|сейчас.{0,28}(?:будем\s+)?молит|(?:встан|стан)\p{L}*.{0,45}(?:помол|просить\s+благослов)|ми\s+будемо\s+молитися|склон\p{L}*.{0,25}колен|отче\s+наш|our\s+father|let\s+us\s+pray|bow.{0,24}(?:head|knee)/iu;
+var PRAYER_END = /(?:(?:^|\s)(?:аминь|amen)[.!?]*(?:\s+(?:не|ne)[.!?]*)?$)|(?:(?:^|\s)аминь[.!?]?.*(?:садит|присяд|sit\s+down))/iu;
+function soundsLikePrayer(text) {
+  const invocations = text.match(/(?:^|[^\p{L}])(?:господ\p{L}*|боже|бог\p{L}*|lord|god)(?=$|[^\p{L}])/giu)?.length ?? 0;
+  return invocations >= 2 && /просим|молим|благодарим|благослови|слава\s+тебе|we\s+(?:ask|pray|thank)|please\s+bless/iu.test(text);
+}
+function clockToSeconds(clock) {
+  const parts = clock.split(":").map(Number);
+  if (parts.some((part) => !Number.isFinite(part))) return null;
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return null;
+}
+function formatClock(seconds) {
+  if (seconds === null || !Number.isFinite(seconds)) return "--:--";
+  const whole = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor(whole % 3600 / 60);
+  const remainder = whole % 60;
+  return hours ? `${hours}:${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}` : `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+function removeTranscriptPrefix(raw) {
+  const clock = raw.match(CLOCK_PREFIX)?.[1] ?? null;
+  if (!clock) return { timestamp: null, startSeconds: null, text: raw.trim() };
+  let remainder = raw.slice(clock.length);
+  const duration = remainder.match(SPOKEN_DURATION)?.[0] ?? "";
+  if (/\d+\s+(?:hours?|minutes?|seconds?)/i.test(duration)) remainder = remainder.slice(duration.length);
+  return { timestamp: clock, startSeconds: clockToSeconds(clock), text: remainder.trim() };
+}
+function parseTranscript(input) {
+  const segments = [];
+  let prayerMode = false;
+  for (const [lineIndex, rawLine] of input.replace(/^\uFEFF/, "").split(/\r?\n/).entries()) {
+    const raw = rawLine.trim();
+    if (!raw || /^https?:\/\//i.test(raw)) continue;
+    const parsed = removeTranscriptPrefix(raw);
+    if (!parsed.text) continue;
+    if (PRAYER_START.test(parsed.text) || soundsLikePrayer(parsed.text)) prayerMode = true;
+    const isPrayer = prayerMode;
+    segments.push({
+      index: segments.length,
+      lineNumber: lineIndex + 1,
+      timestamp: parsed.timestamp,
+      startSeconds: parsed.startSeconds,
+      text: parsed.text,
+      raw,
+      isMusic: MUSIC_MARKERS.test(parsed.text),
+      isPrayer
+    });
+    if (prayerMode && PRAYER_END.test(parsed.text)) prayerMode = false;
+  }
+  return segments;
+}
+
+// src/transcriptInterpreter.ts
+var EVENT_ORDER = {
+  context: 0,
+  open: 1,
+  jump: 2,
+  next: 3,
+  previous: 3,
+  advance: 4,
+  read: 5
+};
+function segmentMoment(segment) {
+  return Date.UTC(2026, 0, 1) + (segment.startSeconds ?? segment.index) * 1e3;
+}
+function displayReference(bookId, chapter, language, verseStart, verseEnd) {
+  const definition = BOOKS.find((book3) => book3.id === bookId);
+  const book2 = definition?.names[language] ?? bookId;
+  const canonicalBook = definition?.canonicalBook ?? bookId;
+  const suffix = verseStart ? `:${verseStart}${verseEnd ? `\u2013${verseEnd}` : ""}` : "";
+  return {
+    bookId,
+    book: book2,
+    canonicalBook,
+    chapter,
+    verseStart,
+    verseEnd,
+    display: `${book2} ${chapter}${suffix}`,
+    canonical: `${canonicalBook} ${chapter}${suffix}`
+  };
+}
+function fromParser(reference, language) {
+  return displayReference(reference.bookId, reference.chapter, language, reference.verseStart, reference.verseEnd);
+}
+function fromVerse(verse, language) {
+  return displayReference(verse.bookId, verse.chapter, language, verse.verse);
+}
+function makeEvent(segment, type, action, reference, confidence, basis, sourceText = segment.text) {
+  const key = reference?.canonical ?? "unresolved";
+  return {
+    id: `${segment.index}:${type}:${key}`,
+    type,
+    action,
+    segmentIndex: segment.index,
+    lineNumber: segment.lineNumber,
+    timestamp: segment.timestamp,
+    seconds: segment.startSeconds,
+    reference,
+    confidence: Math.round(confidence * 1e3) / 1e3,
+    basis,
+    sourceText
+  };
+}
+function collectExplicit(segments, language, ignorePrayer) {
+  const detector = new BibleVerseReferenceDetector(language);
+  const events = [];
+  const contexts = [];
+  let previousContext = "";
+  let activeRange = null;
+  for (const segment of segments) {
+    const now = segmentMoment(segment);
+    if (ignorePrayer && segment.isPrayer) {
+      const context2 = detector.readContext(now);
+      contexts[segment.index] = { bookId: context2.bookId, chapter: context2.chapter };
+      continue;
+    }
+    const references = detector.consume(segment.text, now);
+    const context = detector.readContext(now);
+    const contextKey = `${context.bookId ?? ""}:${context.chapter ?? ""}`;
+    if (contextKey !== previousContext) activeRange = null;
+    if (references[0]) {
+      activeRange = { verseStart: references[0].verseStart, verseEnd: references[0].verseEnd };
+    }
+    contexts[segment.index] = {
+      bookId: context.bookId,
+      chapter: context.chapter,
+      verseStart: activeRange?.verseStart,
+      verseEnd: activeRange?.verseEnd
+    };
+    if (context.bookId && context.chapter && contextKey !== previousContext && references.length === 0) {
+      events.push(makeEvent(
+        segment,
+        "context",
+        "SET_CONTEXT",
+        displayReference(context.bookId, context.chapter, language),
+        0.86,
+        "chapter-context"
+      ));
+    }
+    previousContext = contextKey;
+    for (const reference of references) {
+      const type = reference.confidence === "context" ? "jump" : "open";
+      events.push(makeEvent(
+        segment,
+        type,
+        type === "jump" ? "GO_TO_VERSE" : "OPEN_VERSE",
+        fromParser(reference, language),
+        reference.confidence === "exact" ? 0.99 : 0.93,
+        "explicit-reference"
+      ));
+    }
+    const navigation = detectNavigationIntent(segment.text, language);
+    if (navigation) {
+      events.push(makeEvent(
+        segment,
+        navigation,
+        navigation === "next" ? "NEXT_VERSE" : "PREVIOUS_VERSE",
+        null,
+        0.96,
+        "spoken-navigation"
+      ));
+    }
+  }
+  return { events, contexts };
+}
+function quoteEvents(matches, segments, language) {
+  return matches.map((match) => makeEvent(
+    segments[match.segmentIndex],
+    "read",
+    "VERSE_READ",
+    fromVerse(match.verse, language),
+    match.score,
+    "verse-text-match",
+    match.sourceText
+  ));
+}
+function resolveNavigation(events, corpus) {
+  const readings = events.filter((event) => event.type === "read" && event.reference);
+  for (const event of events.filter((candidate) => candidate.type === "next" || candidate.type === "previous")) {
+    const nearby = readings.find((reading) => Math.abs(reading.segmentIndex - event.segmentIndex) <= 1);
+    if (nearby?.reference) {
+      event.reference = nearby.reference;
+      continue;
+    }
+    const prior = [...events].filter((candidate) => candidate.segmentIndex < event.segmentIndex && candidate.reference?.verseStart).sort((left, right) => right.segmentIndex - left.segmentIndex)[0];
+    if (!prior?.reference?.verseStart) continue;
+    const offset = event.type === "next" ? 1 : -1;
+    const targetVerse = prior.reference.verseStart + offset;
+    const target = corpus.byKey.get(`${prior.reference.bookId}:${prior.reference.chapter}:${targetVerse}`);
+    if (target) event.reference = displayReference(target.bookId, target.chapter, corpus.language, target.verse);
+  }
+}
+function expandPartialRanges(events, language) {
+  const rangeCue = language === "ru" ? /(?:^|\s)(?:по|до)(?=\s|$)/u : /(?:^|\s)(?:to|through|thru)(?=\s|$)/;
+  const readings = events.filter((event) => event.type === "read" && event.reference?.verseStart);
+  for (const event of events.filter((candidate) => ["open", "jump"].includes(candidate.type) && candidate.reference?.verseStart && !candidate.reference.verseEnd && rangeCue.test(candidate.sourceText.toLocaleLowerCase()))) {
+    const reference = event.reference;
+    const observed = readings.filter((reading) => reading.segmentIndex >= event.segmentIndex && reading.segmentIndex <= event.segmentIndex + 24 && reading.reference?.bookId === reference.bookId && reading.reference.chapter === reference.chapter).map((reading) => reading.reference.verseStart).sort((left, right) => left - right);
+    let verseEnd = reference.verseStart;
+    for (const verse of new Set(observed)) {
+      if (verse === verseEnd || verse === verseEnd + 1) verseEnd = Math.max(verseEnd, verse);
+    }
+    if (verseEnd > reference.verseStart) {
+      event.reference = displayReference(reference.bookId, reference.chapter, language, reference.verseStart, verseEnd);
+    }
+  }
+}
+function deriveReadingBoundaries(events, segments) {
+  const readings = events.filter((event) => event.type === "read" && event.reference?.verseStart).sort((left, right) => left.segmentIndex - right.segmentIndex || (left.reference?.verseStart ?? 0) - (right.reference?.verseStart ?? 0));
+  const boundaries = [];
+  for (let index = 1; index < readings.length; index += 1) {
+    const previous = readings[index - 1];
+    const current = readings[index];
+    const previousReference = previous.reference;
+    const currentReference = current.reference;
+    if (previousReference.bookId !== currentReference.bookId || previousReference.chapter !== currentReference.chapter || currentReference.verseStart !== (previousReference.verseStart ?? 0) + 1) continue;
+    const spoken = events.some((event) => ["next", "jump"].includes(event.type) && event.segmentIndex === current.segmentIndex);
+    if (spoken) continue;
+    boundaries.push(makeEvent(
+      segments[current.segmentIndex],
+      "advance",
+      "NEXT_VERSE",
+      currentReference,
+      Math.min(previous.confidence, current.confidence),
+      "reading-boundary",
+      current.sourceText
+    ));
+  }
+  return boundaries;
+}
+function uniqueEvents(events) {
+  const seen = /* @__PURE__ */ new Set();
+  return events.sort((left, right) => left.segmentIndex - right.segmentIndex || EVENT_ORDER[left.type] - EVENT_ORDER[right.type]).filter((event) => {
+    const key = `${event.segmentIndex}:${event.type}:${event.reference?.canonical ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+async function interpretTranscript(input, language = "ru", {
+  corpus,
+  ignoreMusic = true,
+  ignorePrayer = true
+} = {}) {
+  const segments = parseTranscript(input);
+  const activeCorpus = corpus ?? await loadVerseCorpus(language);
+  const explicit = collectExplicit(segments, language, ignorePrayer);
+  const matches = matchQuotedVerses(segments, activeCorpus, explicit.contexts, { ignoreMusic, ignorePrayer });
+  const events = [...explicit.events, ...quoteEvents(matches, segments, language)];
+  expandPartialRanges(events, language);
+  resolveNavigation(events, activeCorpus);
+  events.push(...deriveReadingBoundaries(events, segments));
+  const ordered = uniqueEvents(events);
+  const verseKeys = new Set(ordered.flatMap((event) => {
+    const reference = event.reference;
+    if (!reference?.verseStart) return [];
+    const end = reference.verseEnd ?? reference.verseStart;
+    return Array.from({ length: end - reference.verseStart + 1 }, (_, index) => `${reference.bookId}:${reference.chapter}:${reference.verseStart + index}`);
+  }));
+  return {
+    language,
+    translation: activeCorpus.document.translation,
+    corpusId: activeCorpus.document.id,
+    segments,
+    events: ordered,
+    stats: {
+      lines: segments.length,
+      events: ordered.length,
+      uniqueVerses: verseKeys.size,
+      references: ordered.filter((event) => event.type === "open" || event.type === "jump").length,
+      readings: ordered.filter((event) => event.type === "read").length,
+      navigation: ordered.filter((event) => ["advance", "next", "previous", "jump"].includes(event.type)).length
+    }
+  };
+}
+function formatConsoleEvent(event) {
+  const time = event.timestamp ?? formatClock(event.seconds);
+  const reference = event.reference?.canonical ?? "unresolved";
+  const confidence = `${Math.round(event.confidence * 100)}%`;
+  return `[${time}] ${event.action.padEnd(14)} ${reference} \xB7 ${confidence} \xB7 ${event.basis}`;
+}
 export {
-  BibleVerseReferenceDetector
+  VerseCorpusIndex,
+  formatConsoleEvent,
+  interpretTranscript,
+  loadVerseCorpus,
+  matchingTokens,
+  parseTranscript,
+  scoreQuote
 };

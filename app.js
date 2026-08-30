@@ -1,10 +1,12 @@
-import { BibleVerseReferenceDetector } from "./parser.js?v=5";
-import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=5";
-import { configureFeedbackUI } from "./feedback-ui.js?v=5";
-import { downloadCurrentSourceContext } from "./source-context.js?v=5";
-import { EXCERPTS } from "./excerpts.js?v=5";
+import { BibleVerseReferenceDetector } from "./parser.js?v=8";
+import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=8";
+import { configureFeedbackUI } from "./feedback-ui.js?v=8";
+import { EXCERPTS } from "./excerpts.js?v=8";
+import { configureMicTest } from "./mic-test.js?v=8";
+import { configureMoreMenu } from "./more-menu.js?v=8";
+import { configureTranscriptLab } from "./transcript-lab.js?v=8";
 
-const APP_VERSION = "2.1.0";
+const APP_VERSION = "2.3.0";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const LANGUAGE = {
   ru: { recognition: "ru-RU", name: "Russian", ready: "Ready to listen for Russian Bible references." },
@@ -39,7 +41,8 @@ let transcriptHistory = [];
 let interimTranscript = "";
 let latestDetected = null;
 let wakeLock = null;
-let installPrompt = null;
+let micTest = null;
+let transcriptLab = null;
 
 function setPhase(label, tone = "idle") {
   elements.phaseText.textContent = label;
@@ -232,6 +235,7 @@ async function startListening() {
     setMessage("This browser does not provide live speech recognition. Try Chrome or Safari.");
     return;
   }
+  await micTest?.stopInput();
   stopActiveTest();
   resetSessionView();
   wantsListening = true;
@@ -245,6 +249,10 @@ async function startListening() {
     setPhase("Needs attention", "error");
     setMessage("The microphone could not be opened. Check browser permission and try again.");
     updateControls();
+    return;
+  }
+  if (!wantsListening) {
+    await rollingAudio.stop({ keepAudio: false });
     return;
   }
   await requestWakeLock();
@@ -287,6 +295,7 @@ function stopActiveTest() {
 
 async function runExcerpt(excerpt) {
   if (activeTestId) return;
+  await micTest?.stopInput();
   if (wantsListening) await stopListening();
   resetSessionView();
   activeTestId = excerpt.id;
@@ -363,6 +372,7 @@ function setLanguage(next) {
   }
   setMessage(LANGUAGE[language].ready);
   renderExcerpts();
+  transcriptLab?.setLanguage(language);
 }
 
 function toggleFolder(section, content, button) {
@@ -398,39 +408,6 @@ async function createFeedbackReport({ kind, expected, caught, note, requestedAud
   };
 }
 
-function configureMoreMenu() {
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-  elements.installInstructions.textContent = isIOS
-    ? "In Safari, tap Share, then Add to Home Screen. The installed app follows website updates."
-    : "Install this listener as a full-screen browser app. It follows website updates.";
-  if (isStandalone) elements.nativeInstallButton.hidden = true;
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    installPrompt = event;
-    elements.nativeInstallButton.hidden = false;
-  });
-  elements.nativeInstallButton.addEventListener("click", async () => {
-    if (!installPrompt) return;
-    await installPrompt.prompt();
-    installPrompt = null;
-    elements.nativeInstallButton.hidden = true;
-  });
-  elements.downloadSourceButton.addEventListener("click", async () => {
-    elements.downloadSourceButton.disabled = true;
-    try {
-      await downloadCurrentSourceContext((index, total, path) => {
-        elements.sourceDownloadStatus.textContent = `Fetching ${index}/${total} · ${path}`;
-      });
-      elements.sourceDownloadStatus.textContent = "Current GitHub source context downloaded.";
-    } catch {
-      elements.sourceDownloadStatus.textContent = "Could not reach GitHub. Check the connection and try again.";
-    } finally {
-      elements.downloadSourceButton.disabled = false;
-    }
-  });
-}
-
 function configureTheme() {
   const stored = localStorage.getItem("verse-theme");
   document.documentElement.dataset.theme = stored || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -450,6 +427,14 @@ const feedbackUI = configureFeedbackUI({
     audioSeconds: rollingAudio.availableSeconds,
   }),
 });
+
+micTest = configureMicTest({
+  beforeStart: async () => {
+    stopActiveTest();
+    if (wantsListening) await stopListening();
+  },
+});
+transcriptLab = configureTranscriptLab({ initialLanguage: language });
 
 elements.startButton.addEventListener("click", () => void startListening());
 elements.stopButton.addEventListener("click", () => void stopListening());
@@ -479,10 +464,11 @@ window.addEventListener("pagehide", () => {
   clearTimeout(restartTimer);
   if (recognitionRunning) recognition.abort();
   void rollingAudio.stop({ keepAudio: false });
+  void micTest?.destroy();
 });
 
 configureTheme();
-configureMoreMenu();
+configureMoreMenu(elements);
 for (const button of elements.languageButtons) {
   const active = button.dataset.language === language;
   button.classList.toggle("active", active);
@@ -493,5 +479,5 @@ renderExcerpts();
 void feedbackUI.flush();
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=5").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js?v=8").catch(() => {}));
 }
