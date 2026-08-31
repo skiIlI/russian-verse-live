@@ -6,6 +6,9 @@ import { interpretTranscript, parseTranscript, VerseCorpusIndex } from "../inter
 const argumentsList = process.argv.slice(2);
 const outputIndex = argumentsList.indexOf("--output");
 const outputPath = outputIndex >= 0 ? argumentsList.splice(outputIndex, 2)[1] : null;
+const includePrayerIndex = argumentsList.indexOf("--include-prayer");
+const includePrayer = includePrayerIndex >= 0;
+if (includePrayer) argumentsList.splice(includePrayerIndex, 1);
 const videoIds = argumentsList.length
   ? argumentsList
   : ["Y5bbaQmyXKI", "8h2Pggc2BQ8", "8CPFj6QO_n8"];
@@ -46,6 +49,7 @@ function summarize(videoId, transcript, analysis) {
     durationSeconds,
     duration: secondsToClock(durationSeconds),
     transcriptSegments: segments.length,
+    transcript,
     counts,
     uniqueReferences: new Set(analysis.events.map(canonical).filter((value) => value !== "unresolved")).size,
     lowConfidence: lowConfidence.map((event) => ({
@@ -73,7 +77,7 @@ for (const videoId of videoIds) {
   const analysis = await interpretTranscript(captions.transcript, "ru", {
     corpus,
     ignoreMusic: true,
-    ignorePrayer: true,
+    ignorePrayer: !includePrayer,
   });
   services.push(summarize(videoId, captions.transcript, analysis));
 }
@@ -81,6 +85,7 @@ for (const videoId of videoIds) {
 const report = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
+  includePrayer,
   language: "ru",
   translation: corpusDocument.translation,
   totalDurationSeconds: services.reduce((sum, service) => sum + service.durationSeconds, 0),

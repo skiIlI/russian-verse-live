@@ -41,6 +41,7 @@ function reportInput(metadata: FeedbackMetadata, origin: string, hash: string, h
     context: metadata.context,
     expected_text: metadata.expected,
     kind: metadata.kind,
+    timing: metadata.timing,
     language: metadata.language,
     latest_reference: metadata.latestReference,
     note: metadata.note,
@@ -132,4 +133,3 @@ Deno.serve(async (req) => {
     }, status);
   }
 });
-

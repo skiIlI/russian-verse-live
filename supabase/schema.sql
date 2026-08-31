@@ -4,7 +4,9 @@ create table if not exists public.verse_feedback_reports (
   status text not null default 'new'
     check (status in ('uploading', 'new', 'audio_failed', 'reviewed', 'resolved')),
   language text not null check (language in ('ru', 'en')),
-  kind text not null check (kind in ('missed', 'wrong', 'other')),
+  kind text not null check (kind in ('missed', 'late', 'misinterpreted', 'wrong', 'other')),
+  timing text not null default ''
+    check (timing in ('', '1-2', '3-5', '5-plus')),
   expected_text text not null default '',
   caught_text text not null default '',
   note text not null default '',
@@ -31,6 +33,19 @@ create table if not exists public.verse_feedback_reports (
   reviewed_at timestamptz,
   resolved_at timestamptz
 );
+
+alter table public.verse_feedback_reports
+  add column if not exists timing text not null default '';
+alter table public.verse_feedback_reports
+  drop constraint if exists verse_feedback_reports_kind_check;
+alter table public.verse_feedback_reports
+  add constraint verse_feedback_reports_kind_check
+  check (kind in ('missed', 'late', 'misinterpreted', 'wrong', 'other'));
+alter table public.verse_feedback_reports
+  drop constraint if exists verse_feedback_reports_timing_check;
+alter table public.verse_feedback_reports
+  add constraint verse_feedback_reports_timing_check
+  check (timing in ('', '1-2', '3-5', '5-plus'));
 
 alter table public.verse_feedback_reports enable row level security;
 revoke all on table public.verse_feedback_reports from anon, authenticated;

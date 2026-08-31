@@ -13,6 +13,7 @@ type NewFeedbackRow = {
   status: string;
   language: string;
   kind: string;
+  timing: string;
   expected_text: string;
   caught_text: string;
   note: string;
@@ -109,4 +110,3 @@ export async function deleteFeedback(id: string, token: string): Promise<void> {
   const response = await databaseRequest(`verse_feedback_reports?${query}`, { method: 'DELETE' });
   if (!response.ok) throw new Error(`Feedback database delete failed (${response.status}).`);
 }
-

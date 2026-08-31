@@ -1,12 +1,12 @@
-import { interpretTranscript } from "./interpreter.js?v=13";
+import { interpretTranscript } from "./interpreter.js?v=22";
 import { parseYouTubeVideoId } from "./youtube-review.js?v=13";
 import { captionCues, chooseSermonStart, detectorAgreement, formatClock, parseClock, recommendModel, sliceCaptionTranscript, wordErrorRate } from "./transcription-benchmark-core.js?v=13";
 
 const MODELS = [
-  { id: "tiny", label: "Whisper Tiny" },
   { id: "base", label: "Whisper Base" },
   { id: "small", label: "Whisper Small" },
-  { id: "browser", label: "Browser speech service" },
+  { id: "medium", label: "Whisper Medium" },
+  { id: "largeTurbo", label: "Whisper Large Turbo" },
 ];
 
 function byId(id) { return document.querySelector(`#${id}`); }
@@ -24,7 +24,7 @@ function download(name, contents, type) {
 
 function runWorker(model, audio, language, onProgress, registerCancel) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker("./whisper-worker.js?v=13", { type: "module" });
+    const worker = new Worker("./whisper-worker.js?v=22", { type: "module" });
     registerCancel(() => { worker.terminate(); reject(new Error("Benchmark stopped.")); });
     const started = performance.now();
     worker.addEventListener("message", (event) => {
@@ -58,7 +58,6 @@ export function configureTranscriptionBenchmark({ youtubeUrl, language: readLang
   let captions = "";
   let report = null;
   let cancelled = false;
-  let activeRecognition = null;
   let cancelActiveRun = null;
 
   function registerCancel(cancel) { cancelActiveRun = cancel; }
@@ -126,58 +125,6 @@ export function configureTranscriptionBenchmark({ youtubeUrl, language: readLang
     elements.exportJson.disabled = false;
   }
 
-  async function runBrowser(current) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) throw new Error("Browser speech recognition is unavailable.");
-    elements.audio.src = clipUrl(current);
-    elements.audio.hidden = false;
-    await elements.audio.play();
-    const stream = elements.audio.captureStream?.() ?? elements.audio.mozCaptureStream?.();
-    const track = stream?.getAudioTracks()[0];
-    if (!track) {
-      elements.audio.pause();
-      throw new Error("This browser cannot capture media playback.");
-    }
-    const recognition = new SpeechRecognition();
-    activeRecognition = recognition;
-    recognition.lang = readLanguage() === "ru" ? "ru-RU" : "en-US";
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    let text = "";
-    const started = performance.now();
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const finish = (callback, value) => {
-        if (settled) return;
-        settled = true;
-        registerCancel(null);
-        activeRecognition = null;
-        try { recognition.abort(); } catch {}
-        callback(value);
-      };
-      registerCancel(() => finish(reject, new Error("Benchmark stopped.")));
-      recognition.onresult = (event) => {
-        for (let index = event.resultIndex; index < event.results.length; index += 1) {
-          if (event.results[index].isFinal) text += ` ${event.results[index][0]?.transcript ?? ""}`;
-        }
-      };
-      recognition.onerror = (event) => {
-        elements.audio.pause();
-        finish(reject, new Error(`Browser recognition: ${event.error}.`));
-      };
-      recognition.onend = () => {
-        if (!cancelled && !elements.audio.ended && !elements.audio.paused) {
-          try { recognition.start(track); } catch {}
-        }
-      };
-      elements.audio.addEventListener("ended", () => {
-        try { recognition.stop(); } catch {}
-        finish(resolve, { text: text.trim(), runtimeSeconds: (performance.now() - started) / 1_000 });
-      }, { once: true });
-      recognition.start(track);
-    });
-  }
-
   async function run() {
     const current = selection();
     if (!current) { setStatus("Enter a valid YouTube link, start time, and 1–60 minute duration.", "error"); return; }
@@ -198,11 +145,9 @@ export function configureTranscriptionBenchmark({ youtubeUrl, language: readLang
       render();
       for (const model of models) {
         if (cancelled) break;
-        elements.status.textContent = model.id === "browser" ? `Running ${model.label} in real time; the selected audio is playing…` : `Running ${model.label} locally…`;
+        elements.status.textContent = `Running ${model.label} locally…`;
         try {
-          const output = model.id === "browser"
-            ? await runBrowser(current)
-            : await runWorker(model.id, audio, readLanguage(), (status) => { elements.status.textContent = `${model.label} · ${status}`; }, registerCancel);
+          const output = await runWorker(model.id, audio, readLanguage(), (status) => { elements.status.textContent = `${model.label} · ${status}`; }, registerCancel);
           const analysis = await interpretTranscript(output.text, readLanguage(), { ignoreMusic: true, ignorePrayer: true });
           report.results.push({ model: model.id, label: model.label, ...output, wer: wordErrorRate(baselinePlain, output.text), detectorF1: detectorAgreement(report.baselineEvents, analysis.events), events: analysis.events.length, detectorEvents: analysis.events });
         } catch (error) {
@@ -229,7 +174,7 @@ export function configureTranscriptionBenchmark({ youtubeUrl, language: readLang
   elements.usePosition.addEventListener("click", () => { elements.start.value = formatClock(review.getCurrentTime()); });
   elements.play.addEventListener("click", () => { const current = selection(); if (current) { elements.audio.src = clipUrl(current); elements.audio.hidden = false; void elements.audio.play(); } });
   elements.run.addEventListener("click", () => void run());
-  elements.stop.addEventListener("click", () => { cancelled = true; elements.audio.pause(); cancelActiveRun?.(); try { activeRecognition?.abort(); } catch {} });
+  elements.stop.addEventListener("click", () => { cancelled = true; elements.audio.pause(); cancelActiveRun?.(); });
   elements.exportJson.addEventListener("click", () => report && download(`verse-benchmark-${report.videoId}-${report.start}.json`, JSON.stringify(report, null, 2), "application/json"));
   elements.exportText.addEventListener("click", () => report && download(`verse-benchmark-${report.videoId}-${report.start}.txt`, [report.rangeLabel, "", "YOUTUBE CAPTIONS", report.baseline, ...report.results.flatMap((result) => ["", result.label.toUpperCase(), `${Number.isFinite(result.wer) ? `${Math.round(result.wer * 100)}% WER` : result.error}`, result.text, result.annotation ? `Annotation: ${result.annotation}` : ""])].join("\n"), "text/plain"));
   return { stop: () => { cancelled = true; elements.audio.pause(); cancelActiveRun?.(); } };

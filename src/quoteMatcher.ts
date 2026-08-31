@@ -14,26 +14,40 @@ export type VerseQuoteMatch = {
   endSegmentIndex: number;
   score: number;
   coverage: number;
+  anticipated: boolean;
   sourceText: string;
 };
+
+type VerseCandidate = { anchors: number; contextual: boolean; anticipated: boolean };
+
+function immediatelyAfterContext(verse: IndexedVerse, context: SegmentContext | undefined): boolean {
+  if (!context?.bookId || !context.chapter || !context.verseStart) return false;
+  return verse.bookId === context.bookId
+    && verse.chapter === context.chapter
+    && verse.verse === (context.verseEnd ?? context.verseStart) + 1;
+}
 
 function candidateIndices(
   windowTokens: string[],
   corpus: VerseCorpusIndex,
   context: SegmentContext | undefined,
-): Map<number, { anchors: number; contextual: boolean }> {
-  const candidates = new Map<number, { anchors: number; contextual: boolean }>();
+): Map<number, VerseCandidate> {
+  const candidates = new Map<number, VerseCandidate>();
   for (const token of new Set(windowTokens)) {
     for (const index of corpus.postings.get(token) ?? []) {
-      const current = candidates.get(index) ?? { anchors: 0, contextual: false };
+      const current = candidates.get(index) ?? { anchors: 0, contextual: false, anticipated: false };
       current.anchors += 1;
       candidates.set(index, current);
     }
   }
   for (const verse of corpus.chapter(context?.bookId ?? null, context?.chapter ?? null)) {
-    if (context?.verseStart && (verse.verse < context.verseStart || verse.verse > (context.verseEnd ?? context.verseStart))) continue;
-    const current = candidates.get(verse.index) ?? { anchors: 0, contextual: true };
-    current.contextual = true;
+    const contextual = !context?.verseStart
+      || (verse.verse >= context.verseStart && verse.verse <= (context.verseEnd ?? context.verseStart));
+    const anticipated = immediatelyAfterContext(verse, context);
+    if (!contextual && !anticipated) continue;
+    const current = candidates.get(verse.index) ?? { anchors: 0, contextual: false, anticipated: false };
+    current.contextual ||= contextual;
+    current.anticipated ||= anticipated;
     candidates.set(verse.index, current);
   }
   return candidates;
@@ -42,8 +56,13 @@ function candidateIndices(
 function hasQuoteCue(text: string, language: VerseCorpusIndex["language"]): boolean {
   const normalized = text.toLocaleLowerCase();
   return language === "ru"
-    ? /писан|библи|слово.{0,30}говор|чита(?:ем|ю|ть)|прочита|зачита|стих|текст/u.test(normalized)
-    : /scripture|bible|(?:the\s+)?word.{0,24}says?|(?:we\s+)?read|written|verse/.test(normalized);
+    ? /писан|библи|слово.{0,30}говор|чита(?:ем|ю|ть)|прочита|зачита|стих|текст|(?:бог|господ[ья])\s+(?:сказал|говорил|говорит)|(?:сказал|говорит)\s+(?:бог|господ[ья])/u.test(normalized)
+    : /scripture|bible|(?:the\s+)?word.{0,24}says?|(?:we\s+)?read|written|verse|(?:the\s+)?psalmist\s+says?|(?:god|(?:the\s+)?lord)\s+(?:said|says|spoke|speaks)/.test(normalized);
+}
+
+function hasSignatureCue(text: string, language: VerseCorpusIndex["language"]): boolean {
+  if (language !== "en") return false;
+  return /(?:the\s+)?psalmist\s+says?/i.test(text);
 }
 
 function alignedWithContext(match: VerseQuoteMatch, context: SegmentContext | undefined): boolean {
@@ -53,21 +72,25 @@ function alignedWithContext(match: VerseQuoteMatch, context: SegmentContext | un
   return match.verse.verse >= context.verseStart && match.verse.verse <= (context.verseEnd ?? context.verseStart);
 }
 
+function supportedByContext(match: VerseQuoteMatch, context: SegmentContext | undefined): boolean {
+  return alignedWithContext(match, context) || (match.anticipated && immediatelyAfterContext(match.verse, context));
+}
+
 function preferContext(matches: VerseQuoteMatch[], contexts: SegmentContext[]): VerseQuoteMatch[] {
   return matches.filter((match) => {
     const context = contexts[match.segmentIndex];
     if (!context?.bookId) return true;
-    if (alignedWithContext(match, context)) {
+    if (supportedByContext(match, context)) {
       const strongerAlternative = matches.find((candidate) => (
         candidate.segmentIndex === match.segmentIndex
-        && !alignedWithContext(candidate, context)
+        && !supportedByContext(candidate, context)
         && candidate.score > match.score + 0.04
       ));
       return !strongerAlternative;
     }
     const contextualWinner = matches.find((candidate) => (
       candidate.segmentIndex === match.segmentIndex
-      && alignedWithContext(candidate, context)
+      && supportedByContext(candidate, context)
       && candidate.score >= match.score - 0.03
     ));
     if (contextualWinner) return false;
@@ -150,13 +173,21 @@ export function matchQuotedVerses(
           && verse.bookId === activeContext.bookId
           && verse.chapter === activeContext.chapter
           && (verse.verse < activeContext.verseStart || verse.verse > (activeContext.verseEnd ?? activeContext.verseStart))
+          && !candidate.anticipated
         ) continue;
-        const minimumAnchors = verse.meaningful.length <= 6 ? 2 : 3;
-        if (!candidate.contextual && candidate.anchors < minimumAnchors) continue;
+        const signatureCued = hasSignatureCue(sourceText, corpus.language);
+        const minimumAnchors = signatureCued ? 1 : verse.meaningful.length <= 6 ? 2 : 3;
+        if (candidate.anticipated && candidate.anchors < Math.max(3, minimumAnchors)) continue;
+        if (!candidate.contextual && !candidate.anticipated && candidate.anchors < minimumAnchors) continue;
         const segmentIndex = bestSourceSegment(segments, start, end, verse, corpus.language);
-        const cued = hasQuoteCue(segments[segmentIndex].text, corpus.language);
-        if (!candidate.contextual && !cued && verse.meaningful.length < 6) continue;
-        const scored = scoreQuote(verse.meaningful, windowTokens, { contextual: candidate.contextual, cued });
+        const cued = hasQuoteCue(segments[segmentIndex].text, corpus.language) || signatureCued;
+        if (!candidate.contextual && !candidate.anticipated && !cued && verse.meaningful.length < 6) continue;
+        const scored = scoreQuote(verse.meaningful, windowTokens, {
+          contextual: candidate.contextual,
+          cued,
+          anticipated: candidate.anticipated,
+          signatureCued,
+        });
         if (!scored) continue;
         matches.push({
           verse,
@@ -164,6 +195,7 @@ export function matchQuotedVerses(
           endSegmentIndex: end,
           score: scored.score,
           coverage: scored.coverage,
+          anticipated: candidate.anticipated,
           sourceText,
         });
       }

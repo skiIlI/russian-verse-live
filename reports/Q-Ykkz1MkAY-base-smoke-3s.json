@@ -1,0 +1,682 @@
+{
+  "ok": true,
+  "report": {
+    "schemaVersion": 1,
+    "generatedAt": "2026-08-31T19:13:01.543Z",
+    "videoId": "Q-Ykkz1MkAY",
+    "model": "base",
+    "modelLabel": "Whisper Base",
+    "device": "webgpu",
+    "cadenceSeconds": 1,
+    "windowSeconds": 3,
+    "productionSingleFlight": true,
+    "truthMethod": "Independent review of the complete YouTube transcript, explicit references, sermon context, and recognizable Russian Synodal quotations.",
+    "windows": [
+      {
+        "id": "psalm-62-reading",
+        "start": 110,
+        "end": 220,
+        "expected": [
+          "Psalms 62:1",
+          "Psalms 62:2",
+          "Psalms 62:3",
+          "Psalms 62:4",
+          "Psalms 62:5",
+          "Psalms 62:6",
+          "Psalms 62:7",
+          "Psalms 62:8",
+          "Psalms 62:9"
+        ],
+        "chunks": [
+          {
+            "audioSeconds": 111,
+            "inferenceSeconds": 1.493,
+            "novelText": "Редактор субтитров А.Семкин Корректор А.Егорова",
+            "rawText": "Редактор субтитров А.Семкин Корректор А.Егорова"
+          },
+          {
+            "audioSeconds": 112.493,
+            "inferenceSeconds": 1.535,
+            "novelText": "",
+            "rawText": "Редактор субтитров А.Семкин Корректор А.Егорова"
+          },
+          {
+            "audioSeconds": 114.028,
+            "inferenceSeconds": 1.435,
+            "novelText": "",
+            "rawText": "Редактор субтитров А.Семкин Корректор А.Егорова"
+          },
+          {
+            "audioSeconds": 115.462,
+            "inferenceSeconds": 0.572,
+            "novelText": "[музыка]",
+            "rawText": "[музыка]"
+          },
+          {
+            "audioSeconds": 116.462,
+            "inferenceSeconds": 0.558,
+            "novelText": "",
+            "rawText": "[музыка]"
+          },
+          {
+            "audioSeconds": 117.462,
+            "inferenceSeconds": 0.562,
+            "novelText": "",
+            "rawText": "[музыка]"
+          },
+          {
+            "audioSeconds": 118.462,
+            "inferenceSeconds": 0.512,
+            "novelText": "Снова б",
+            "rawText": "Снова б"
+          },
+          {
+            "audioSeconds": 119.462,
+            "inferenceSeconds": 0.774,
+            "novelText": "Снова буху в эти сестры",
+            "rawText": "Снова буху в эти сестры"
+          },
+          {
+            "audioSeconds": 120.462,
+            "inferenceSeconds": 0.881,
+            "novelText": "",
+            "rawText": "Снова буху в эти сестры."
+          },
+          {
+            "audioSeconds": 121.462,
+            "inferenceSeconds": 1.076,
+            "novelText": "Угубы эти сестры.",
+            "rawText": "Угубы эти сестры."
+          },
+          {
+            "audioSeconds": 122.538,
+            "inferenceSeconds": 0.615,
+            "novelText": "Сегодня мы с",
+            "rawText": "Сегодня мы с"
+          },
+          {
+            "audioSeconds": 123.538,
+            "inferenceSeconds": 0.706,
+            "novelText": "Сегодня мы снова видим лица дурак.",
+            "rawText": "Сегодня мы снова видим лица дурак."
+          },
+          {
+            "audioSeconds": 124.538,
+            "inferenceSeconds": 0.797,
+            "novelText": "друга, милость",
+            "rawText": "Сегодня мы снова видим лица друг друга, милость"
+          },
+          {
+            "audioSeconds": 125.538,
+            "inferenceSeconds": 0.766,
+            "novelText": "Нового Вегемлица друг друга.",
+            "rawText": "Нового Вегемлица друг друга."
+          },
+          {
+            "audioSeconds": 126.538,
+            "inferenceSeconds": 1.131,
+            "novelText": "милость господня продлилась до колокольца.",
+            "rawText": "Друга милость господня продлилась до колокольца."
+          },
+          {
+            "audioSeconds": 127.669,
+            "inferenceSeconds": 0.881,
+            "novelText": "подня продлилась до каждого из нас.",
+            "rawText": "подня продлилась до каждого из нас."
+          },
+          {
+            "audioSeconds": 128.669,
+            "inferenceSeconds": 0.599,
+            "novelText": "И помню,",
+            "rawText": "И помню,"
+          },
+          {
+            "audioSeconds": 129.669,
+            "inferenceSeconds": 0.835,
+            "novelText": "из нас и помилось-то позже.",
+            "rawText": "из нас и помилось-то позже."
+          },
+          {
+            "audioSeconds": 130.669,
+            "inferenceSeconds": 1.351,
+            "novelText": "и помилости Божий, мы снова в длоге.",
+            "rawText": "и помилости Божий, мы снова в длоге."
+          },
+          {
+            "audioSeconds": 132.02,
+            "inferenceSeconds": 1.616,
+            "novelText": "позже мы снова в доме молитвы пришли на томе",
+            "rawText": "позже мы снова в доме молитвы пришли на томе"
+          },
+          {
+            "audioSeconds": 133.636,
+            "inferenceSeconds": 1.333,
+            "novelText": "Мемолитвы пришли на то место.",
+            "rawText": "Мемолитвы пришли на то место."
+          },
+          {
+            "audioSeconds": 134.969,
+            "inferenceSeconds": 0.854,
+            "novelText": "чтобы прославить вместе",
+            "rawText": "место, чтобы прославить вместе"
+          },
+          {
+            "audioSeconds": 135.969,
+            "inferenceSeconds": 0.77,
+            "novelText": "имя Господа нашей",
+            "rawText": "Чтобы прославить вместе имя Господа нашей"
+          },
+          {
+            "audioSeconds": 136.969,
+            "inferenceSeconds": 1.239,
+            "novelText": "расслабить вместе ими Господа нашей Суса Христа.",
+            "rawText": "расслабить вместе ими Господа нашей Суса Христа."
+          },
+          {
+            "audioSeconds": 138.208,
+            "inferenceSeconds": 1.412,
+            "novelText": "Господо нашей Иисуса Христа, слава Господа.",
+            "rawText": "Господо нашей Иисуса Христа, слава Господа."
+          },
+          {
+            "audioSeconds": 139.62,
+            "inferenceSeconds": 0.932,
+            "novelText": "Стас, слава, Господи.",
+            "rawText": "Стас, слава, Господи."
+          },
+          {
+            "audioSeconds": 140.62,
+            "inferenceSeconds": 0.465,
+            "novelText": "С вами",
+            "rawText": "С вами"
+          },
+          {
+            "audioSeconds": 141.62,
+            "inferenceSeconds": 0.879,
+            "novelText": "Хочу миссис вам видовать откруем.",
+            "rawText": "Хочу миссис вам видовать откруем."
+          },
+          {
+            "audioSeconds": 142.62,
+            "inferenceSeconds": 1.083,
+            "novelText": "Мяси с вами, давайте откроем в салондах.",
+            "rawText": "Мяси с вами, давайте откроем в салондах."
+          },
+          {
+            "audioSeconds": 143.703,
+            "inferenceSeconds": 0.768,
+            "novelText": "Кроем солом Давида 60",
+            "rawText": "Кроем солом Давида 60"
+          },
+          {
+            "audioSeconds": 144.703,
+            "inferenceSeconds": 0.873,
+            "novelText": "Солом Давида 62-й посолом",
+            "rawText": "Солом Давида 62-й посолом"
+          },
+          {
+            "audioSeconds": 145.703,
+            "inferenceSeconds": 0.782,
+            "novelText": "60-го салон.",
+            "rawText": "60-го салон."
+          },
+          {
+            "audioSeconds": 146.703,
+            "inferenceSeconds": 0.753,
+            "novelText": "Солом Шестья",
+            "rawText": "Солом Шестья"
+          },
+          {
+            "audioSeconds": 147.703,
+            "inferenceSeconds": 0.583,
+            "novelText": "Солгом 62.",
+            "rawText": "Солгом 62."
+          },
+          {
+            "audioSeconds": 148.703,
+            "inferenceSeconds": 0.619,
+            "novelText": "",
+            "rawText": "Солгом 62."
+          },
+          {
+            "audioSeconds": 149.703,
+            "inferenceSeconds": 0.66,
+            "novelText": "на писан так салон",
+            "rawText": "на писан так салон"
+          },
+          {
+            "audioSeconds": 150.703,
+            "inferenceSeconds": 1.086,
+            "novelText": "Написан так, салом, девида, когда он",
+            "rawText": "Написан так, салом, девида, когда он"
+          },
+          {
+            "audioSeconds": 151.789,
+            "inferenceSeconds": 1.885,
+            "novelText": "Написан так, в салон-давиде, когда он был в пустине и",
+            "rawText": "Написан так, в салон-давиде, когда он был в пустине и"
+          },
+          {
+            "audioSeconds": 153.674,
+            "inferenceSeconds": 1.384,
+            "novelText": "был в пустыне иудеянской.",
+            "rawText": "был в пустыне иудеянской."
+          },
+          {
+            "audioSeconds": 155.059,
+            "inferenceSeconds": 0.903,
+            "novelText": "Говори такие слова, боже,",
+            "rawText": "Говори такие слова, боже,"
+          },
+          {
+            "audioSeconds": 156.059,
+            "inferenceSeconds": 1.042,
+            "novelText": "ты Бог мой, тебе",
+            "rawText": "Говори такие слова, Болжа, ты Бог мой, тебе"
+          },
+          {
+            "audioSeconds": 157.1,
+            "inferenceSeconds": 1.126,
+            "novelText": "от ранней заведет!",
+            "rawText": "Болжа, ты бог мой, тебя от ранней заведет!"
+          },
+          {
+            "audioSeconds": 158.227,
+            "inferenceSeconds": 0.961,
+            "novelText": "Бод мой тебя от ранней за ей еще я.",
+            "rawText": "Бод мой тебя от ранней за ей еще я."
+          },
+          {
+            "audioSeconds": 159.227,
+            "inferenceSeconds": 0.807,
+            "novelText": "На пранейзоре еще я.",
+            "rawText": "На пранейзоре еще я."
+          },
+          {
+            "audioSeconds": 160.227,
+            "inferenceSeconds": 1.436,
+            "novelText": "и шуя, и беззайдя и дусарма я.",
+            "rawText": "и шуя, и беззайдя и дусарма я."
+          },
+          {
+            "audioSeconds": 161.663,
+            "inferenceSeconds": 1.017,
+            "novelText": "Жаль же душа моя, по тебе то мится плотно.",
+            "rawText": "Жаль же душа моя, по тебе то мится плотно."
+          },
+          {
+            "audioSeconds": 162.68,
+            "inferenceSeconds": 0.727,
+            "novelText": "По тебе томит соплоть моя.",
+            "rawText": "По тебе томит соплоть моя."
+          },
+          {
+            "audioSeconds": 163.68,
+            "inferenceSeconds": 0.939,
+            "novelText": "земля пустой.",
+            "rawText": "А тебе томит соплоть моя земля пустой."
+          },
+          {
+            "audioSeconds": 164.68,
+            "inferenceSeconds": 0.928,
+            "novelText": "из сухих",
+            "rawText": "Моя земля пустой из сухих"
+          },
+          {
+            "audioSeconds": 165.68,
+            "inferenceSeconds": 1.417,
+            "novelText": "Земля пустой и сохшей и безводной.",
+            "rawText": "Земля пустой и сохшей и безводной."
+          },
+          {
+            "audioSeconds": 167.098,
+            "inferenceSeconds": 1.33,
+            "novelText": "Чтобы видеть",
+            "rawText": "и сухшей и безводной. Чтобы видеть"
+          },
+          {
+            "audioSeconds": 168.427,
+            "inferenceSeconds": 0.921,
+            "novelText": "чтобы винить силу твою и слава",
+            "rawText": "чтобы винить силу твою и слава"
+          },
+          {
+            "audioSeconds": 169.427,
+            "inferenceSeconds": 0.979,
+            "novelText": "чтобы веди силу твою и славу твоей видео у тебя.",
+            "rawText": "чтобы веди силу твою и славу твоей видео у тебя."
+          },
+          {
+            "audioSeconds": 170.427,
+            "inferenceSeconds": 1.402,
+            "novelText": "Твою и славы твою, как я видел тебя, во свеке и лище.",
+            "rawText": "Твою и славы твою, как я видел тебя, во свеке и лище."
+          },
+          {
+            "audioSeconds": 171.83,
+            "inferenceSeconds": 0.453,
+            "novelText": "в",
+            "rawText": "в"
+          },
+          {
+            "audioSeconds": 172.83,
+            "inferenceSeconds": 1.315,
+            "novelText": "ибо милость твоя лучшенья.",
+            "rawText": "ибо милость твоя лучшенья."
+          },
+          {
+            "audioSeconds": 174.144,
+            "inferenceSeconds": 1.155,
+            "novelText": "не жили жизнь.",
+            "rawText": "Ибо милость твоя лучше не жили жизнь."
+          },
+          {
+            "audioSeconds": 175.3,
+            "inferenceSeconds": 1.206,
+            "novelText": "и устамые восхвативали.",
+            "rawText": "Лучше не жили жизнь и устамые восхвативали."
+          },
+          {
+            "audioSeconds": 176.506,
+            "inferenceSeconds": 0.999,
+            "novelText": "и устамые восхваляю тебя.",
+            "rawText": "и устамые восхваляю тебя."
+          },
+          {
+            "audioSeconds": 177.506,
+            "inferenceSeconds": 0.812,
+            "novelText": "Я не знаю, что я не знаю.",
+            "rawText": "Я не знаю, что я не знаю."
+          },
+          {
+            "audioSeconds": 178.506,
+            "inferenceSeconds": 0.913,
+            "novelText": "тебя. Так благосталю тебя в жизни моей",
+            "rawText": "тебя. Так благосталю тебя в жизни моей"
+          },
+          {
+            "audioSeconds": 179.506,
+            "inferenceSeconds": 0.893,
+            "novelText": "",
+            "rawText": "Так благостолю тебя в жизни моей."
+          },
+          {
+            "audioSeconds": 180.506,
+            "inferenceSeconds": 0.631,
+            "novelText": "",
+            "rawText": "тебя в жизни моей."
+          },
+          {
+            "audioSeconds": 181.506,
+            "inferenceSeconds": 0.819,
+            "novelText": "Ваиметваю вознесу",
+            "rawText": "Ваиметваю вознесу"
+          },
+          {
+            "audioSeconds": 182.506,
+            "inferenceSeconds": 1.041,
+            "novelText": "во имя твоего вознесу руки, мои.",
+            "rawText": "во имя твоего вознесу руки, мои."
+          },
+          {
+            "audioSeconds": 183.547,
+            "inferenceSeconds": 1.024,
+            "novelText": "",
+            "rawText": "твоё вознесу, руки, мои."
+          },
+          {
+            "audioSeconds": 184.571,
+            "inferenceSeconds": 0.604,
+            "novelText": "как туком и",
+            "rawText": "как туком и"
+          },
+          {
+            "audioSeconds": 185.571,
+            "inferenceSeconds": 0.879,
+            "novelText": "елеем насыщается",
+            "rawText": "как туком и елеем насыщается"
+          },
+          {
+            "audioSeconds": 186.571,
+            "inferenceSeconds": 1.168,
+            "novelText": "душамая.",
+            "rawText": "как туком и елеем насыщается душамая."
+          },
+          {
+            "audioSeconds": 187.74,
+            "inferenceSeconds": 1.239,
+            "novelText": "и радостным глазом",
+            "rawText": "насыщается душамая и радостным глазом"
+          },
+          {
+            "audioSeconds": 188.979,
+            "inferenceSeconds": 1.202,
+            "novelText": "восхвалея тебя устал",
+            "rawText": "и радостным глазом восхвалея тебя устал"
+          },
+          {
+            "audioSeconds": 190.181,
+            "inferenceSeconds": 1,
+            "novelText": "в этом глазом восхвале тебя устамый.",
+            "rawText": "в этом глазом восхвале тебя устамый."
+          },
+          {
+            "audioSeconds": 191.181,
+            "inferenceSeconds": 0.93,
+            "novelText": "когда я вспоминаю эти",
+            "rawText": "тебя устамый, когда я вспоминаю эти"
+          },
+          {
+            "audioSeconds": 192.181,
+            "inferenceSeconds": 0.882,
+            "novelText": "и когда я вспоминаю тебе на посте",
+            "rawText": "и когда я вспоминаю тебе на посте"
+          },
+          {
+            "audioSeconds": 193.181,
+            "inferenceSeconds": 0.908,
+            "novelText": "мы",
+            "rawText": "Когда я вспоминаю тебе на постели мы"
+          },
+          {
+            "audioSeconds": 194.181,
+            "inferenceSeconds": 0.962,
+            "novelText": "ей размышляем.",
+            "rawText": "на постели, мы ей размышляем."
+          },
+          {
+            "audioSeconds": 195.181,
+            "inferenceSeconds": 0.721,
+            "novelText": "на постели,",
+            "rawText": "на постели,"
+          },
+          {
+            "audioSeconds": 196.181,
+            "inferenceSeconds": 0.917,
+            "novelText": "размышляя о тебе ночные стражи.",
+            "rawText": "размышляя о тебе ночные стражи."
+          },
+          {
+            "audioSeconds": 197.181,
+            "inferenceSeconds": 1,
+            "novelText": "и пошла я от тебя в ночные стражи и буду",
+            "rawText": "и пошла я от тебя в ночные стражи и буду"
+          },
+          {
+            "audioSeconds": 198.181,
+            "inferenceSeconds": 0.793,
+            "novelText": "и будь и помощь моя.",
+            "rawText": "и будь и помощь моя."
+          },
+          {
+            "audioSeconds": 199.181,
+            "inferenceSeconds": 0.945,
+            "novelText": "и в тени.",
+            "rawText": "и будь и помощь моя и в тени."
+          },
+          {
+            "audioSeconds": 200.181,
+            "inferenceSeconds": 1.147,
+            "novelText": "крыут в их.",
+            "rawText": "и помощь моя, и в тени крыут в их."
+          },
+          {
+            "audioSeconds": 201.328,
+            "inferenceSeconds": 1.223,
+            "novelText": "я возрадую.",
+            "rawText": "И в тени крыут вы их, я возрадую."
+          },
+          {
+            "audioSeconds": 202.551,
+            "inferenceSeconds": 1.166,
+            "novelText": "твоих я возраду есть.",
+            "rawText": "твоих я возраду есть."
+          },
+          {
+            "audioSeconds": 203.717,
+            "inferenceSeconds": 1.195,
+            "novelText": "в возроду есть, к тебе прилипилась душа",
+            "rawText": "в возроду есть, к тебе прилипилась душа"
+          },
+          {
+            "audioSeconds": 204.912,
+            "inferenceSeconds": 0.906,
+            "novelText": "К тебе прилипилось душамое, десниться",
+            "rawText": "К тебе прилипилось душамое, десниться"
+          },
+          {
+            "audioSeconds": 205.912,
+            "inferenceSeconds": 1.047,
+            "novelText": "Допись, Душа моя, Десница твоя!",
+            "rawText": "Допись, Душа моя, Десница твоя!"
+          },
+          {
+            "audioSeconds": 206.958,
+            "inferenceSeconds": 0.824,
+            "novelText": "поддерживает.",
+            "rawText": "Десница твоя поддерживает."
+          },
+          {
+            "audioSeconds": 207.958,
+            "inferenceSeconds": 0.715,
+            "novelText": "Это твоя поддерживает меня.",
+            "rawText": "Это твоя поддерживает меня."
+          },
+          {
+            "audioSeconds": 208.958,
+            "inferenceSeconds": 0.579,
+            "novelText": "",
+            "rawText": "поддерживает меня."
+          },
+          {
+            "audioSeconds": 209.958,
+            "inferenceSeconds": 0.805,
+            "novelText": "с Лого Богу.",
+            "rawText": "меня с Лого Богу."
+          },
+          {
+            "audioSeconds": 210.958,
+            "inferenceSeconds": 0.797,
+            "novelText": "Слава Богу.",
+            "rawText": "Слава Богу."
+          },
+          {
+            "audioSeconds": 211.958,
+            "inferenceSeconds": 0.497,
+            "novelText": "",
+            "rawText": "Богу."
+          },
+          {
+            "audioSeconds": 212.958,
+            "inferenceSeconds": 1.056,
+            "novelText": "Сло, довида, молитва, довидва.",
+            "rawText": "Сло, довида, молитва, довидва."
+          },
+          {
+            "audioSeconds": 214.014,
+            "inferenceSeconds": 1.046,
+            "novelText": "Слово довида молитва довица, которую он",
+            "rawText": "Слово довида молитва довица, которую он"
+          },
+          {
+            "audioSeconds": 215.06,
+            "inferenceSeconds": 1.014,
+            "novelText": "Малитва Давида, которую он записал за",
+            "rawText": "Малитва Давида, которую он записал за"
+          },
+          {
+            "audioSeconds": 216.074,
+            "inferenceSeconds": 1.171,
+            "novelText": "который он записал, записал здесь или",
+            "rawText": "который он записал, записал здесь или"
+          },
+          {
+            "audioSeconds": 217.245,
+            "inferenceSeconds": 1.156,
+            "novelText": "и как",
+            "rawText": "записал, записал здесь или и как"
+          },
+          {
+            "audioSeconds": 218.401,
+            "inferenceSeconds": 1.157,
+            "novelText": "здесь или как оно было пизде.",
+            "rawText": "здесь или как оно было пизде."
+          },
+          {
+            "audioSeconds": 219.558,
+            "inferenceSeconds": 1.069,
+            "novelText": "наверное положено на",
+            "rawText": "как оно было пейсды, наверное положено на"
+          }
+        ],
+        "detections": [
+          {
+            "audioSeconds": 140.62,
+            "availableAtAudioSeconds": 141.093,
+            "canonical": "1 Corinthians 16:23",
+            "confidence": 0.863,
+            "method": "verse-text-match",
+            "sourceText": "расслабить вместе ими Господа нашей Суса Христа. Господо нашей Иисуса Христа, слава Господа. Стас, слава, Господи. С вами",
+            "windowId": "psalm-62-reading"
+          },
+          {
+            "audioSeconds": 151.789,
+            "availableAtAudioSeconds": 153.684,
+            "canonical": "Psalms 62:1",
+            "confidence": 0.717,
+            "method": "verse-text-match",
+            "sourceText": "Солгом 62. на писан так салон Написан так, салом, девида, когда он Написан так, в салон-давиде, когда он был в пустине и",
+            "windowId": "psalm-62-reading"
+          },
+          {
+            "audioSeconds": 169.427,
+            "availableAtAudioSeconds": 170.42,
+            "canonical": "Psalms 62:3",
+            "confidence": 0.979,
+            "method": "verse-text-match",
+            "sourceText": "Земля пустой и сохшей и безводной. Чтобы видеть чтобы винить силу твою и слава чтобы веди силу твою и славу твоей видео у тебя.",
+            "windowId": "psalm-62-reading"
+          },
+          {
+            "audioSeconds": 182.506,
+            "availableAtAudioSeconds": 183.565,
+            "canonical": "Psalms 62:5",
+            "confidence": 0.949,
+            "method": "verse-text-match",
+            "sourceText": "Я не знаю, что я не знаю. тебя. Так благосталю тебя в жизни моей Ваиметваю вознесу во имя твоего вознесу руки, мои.",
+            "windowId": "psalm-62-reading"
+          },
+          {
+            "audioSeconds": 205.912,
+            "availableAtAudioSeconds": 206.975,
+            "canonical": "Psalms 62:9",
+            "confidence": 0.78,
+            "method": "verse-text-match",
+            "sourceText": "твоих я возраду есть. в возроду есть, к тебе прилипилась душа К тебе прилипилось душамое, десниться Допись, Душа моя, Десница твоя!",
+            "windowId": "psalm-62-reading"
+          }
+        ]
+      }
+    ]
+  }
+}

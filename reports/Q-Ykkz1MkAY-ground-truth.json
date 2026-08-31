@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "videoId": "Q-Ykkz1MkAY",
+  "videoTitle": "August 8 2025 @ 7:00pm",
+  "durationSeconds": 7157,
+  "language": "ru",
+  "method": "Independent review of the complete YouTube transcript, explicit references, sermon context, and recognizable Russian Synodal quotations.",
+  "windows": [
+    {
+      "id": "psalm-62-reading",
+      "start": 110,
+      "end": 220,
+      "expected": ["Psalms 62:1", "Psalms 62:2", "Psalms 62:3", "Psalms 62:4", "Psalms 62:5", "Psalms 62:6", "Psalms 62:7", "Psalms 62:8", "Psalms 62:9"]
+    },
+    {
+      "id": "lords-prayer-opening",
+      "start": 875,
+      "end": 930,
+      "expected": ["Matthew 6:9", "Matthew 6:10", "Matthew 6:11", "Matthew 6:12", "Matthew 6:13"]
+    },
+    {
+      "id": "mark-john-luke-readings",
+      "start": 1150,
+      "end": 1495,
+      "expected": ["Mark 16:15", "Mark 16:16", "Mark 16:17", "Mark 16:18", "Mark 16:19", "Mark 16:20", "John 1:12", "John 1:13", "Luke 10:19", "Luke 10:20"]
+    },
+    {
+      "id": "hebrews-2-reading",
+      "start": 1570,
+      "end": 1710,
+      "expected": ["Hebrews 2:14", "Hebrews 2:15"]
+    },
+    {
+      "id": "peter-and-james-readings",
+      "start": 1840,
+      "end": 1960,
+      "expected": ["1 Peter 5:8", "1 Peter 5:9", "James 4:7"]
+    },
+    {
+      "id": "ephesians-1-reading",
+      "start": 2100,
+      "end": 2220,
+      "expected": ["Ephesians 1:16", "Ephesians 1:17", "Ephesians 1:18", "Ephesians 1:19", "Ephesians 1:20", "Ephesians 1:21", "Ephesians 1:22", "Ephesians 1:23"]
+    },
+    {
+      "id": "ephesians-5-and-6-readings",
+      "start": 2270,
+      "end": 2560,
+      "expected": ["Ephesians 5:29", "Ephesians 5:30", "Ephesians 6:10", "Ephesians 6:11", "Ephesians 6:12", "Ephesians 6:13", "Ephesians 6:14", "Ephesians 6:15", "Ephesians 6:16", "Ephesians 6:17"]
+    },
+    {
+      "id": "genesis-3-reading",
+      "start": 3200,
+      "end": 3270,
+      "expected": ["Genesis 3:11", "Genesis 3:12", "Genesis 3:13"]
+    },
+    {
+      "id": "second-peter-reading",
+      "start": 3545,
+      "end": 3600,
+      "expected": ["2 Peter 1:10", "2 Peter 1:11", "2 Peter 1:12", "2 Peter 1:13"]
+    },
+    {
+      "id": "colossians-3-reading",
+      "start": 3790,
+      "end": 3855,
+      "expected": ["Colossians 3:23", "Colossians 3:24", "Colossians 3:25"]
+    },
+    {
+      "id": "matthew-7-quotation",
+      "start": 4080,
+      "end": 4160,
+      "expected": ["Matthew 7:22", "Matthew 7:23"]
+    },
+    {
+      "id": "romans-12-reading",
+      "start": 4460,
+      "end": 4520,
+      "expected": ["Romans 12:11", "Romans 12:12", "Romans 12:13"]
+    },
+    {
+      "id": "john-and-acts-quotations",
+      "start": 5045,
+      "end": 5120,
+      "expected": ["John 13:1", "Acts 19:13", "Acts 19:14", "Acts 19:15", "Acts 19:16"]
+    },
+    {
+      "id": "psalm-hebrews-joshua",
+      "start": 5200,
+      "end": 5350,
+      "expected": ["Psalms 33:9", "Hebrews 13:5", "Joshua 1:5"]
+    },
+    {
+      "id": "scripture-dense-closing-sermon",
+      "start": 5590,
+      "end": 6440,
+      "expected": [
+        "Genesis 3:24", "Matthew 1:23", "Genesis 4:6", "Genesis 4:7", "Genesis 4:16",
+        "John 3:5", "1 Corinthians 6:19", "John 14:23", "Ephesians 3:17", "2 Corinthians 6:16",
+        "John 13:27", "1 Samuel 10:7", "1 Samuel 16:14", "1 Corinthians 5:1", "1 Corinthians 1:5",
+        "1 Corinthians 1:6", "1 Corinthians 1:7", "Matthew 7:23", "2 Timothy 4:10", "Hebrews 13:5",
+        "Genesis 39:2", "Genesis 39:21", "Genesis 39:23", "Genesis 50:20", "Hebrews 10:39",
+        "Daniel 6:10", "Judges 6:12", "Judges 6:16", "Psalms 90:15", "Psalms 22:4", "Joshua 1:5"
+      ]
+    },
+    {
+      "id": "closing-prayer-and-benediction",
+      "start": 6780,
+      "end": 7157,
+      "expected": [
+        "Hebrews 13:5", "Psalms 39:3", "Psalms 39:4", "John 1:12", "Psalms 138:16",
+        "Psalms 90:15", "Isaiah 41:10", "Psalms 90:16", "Matthew 6:9", "Matthew 6:10",
+        "Matthew 6:11", "Matthew 6:12", "Matthew 6:13", "2 Corinthians 13:13"
+      ]
+    }
+  ]
+}

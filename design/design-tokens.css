@@ -1,0 +1,88 @@
+:root {
+  /* Verse Detector · Quiet Focus Glass · canonical design tokens */
+  --vd-font-ui: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --vd-font-scripture: Georgia, serif;
+
+  --vd-color-ink: #16202a;
+  --vd-color-muted: #72808d;
+  --vd-color-faint: #9aa5af;
+  --vd-color-accent: #6675f5;
+  --vd-color-accent-2: #a175f4;
+  --vd-color-cyan: #4bb8cf;
+  --vd-color-warning: #d09a56;
+  --vd-color-danger: #d8657d;
+
+  --vd-glass: rgba(255, 255, 255, .55);
+  --vd-glass-strong: rgba(255, 255, 255, .72);
+  --vd-line: rgba(50, 66, 84, .11);
+  --vd-row: rgba(255, 255, 255, .34);
+
+  --vd-gradient-primary: linear-gradient(135deg, #6675f5, #8f70ed);
+  --vd-gradient-listening: linear-gradient(135deg, #706bf2 0%, #9a63e8 55%, #dc6b9a 118%);
+  --vd-gradient-progress: linear-gradient(90deg, #60c9e9, #6978f5, #a274ee);
+  --vd-gradient-canvas: linear-gradient(150deg, #eaf7ff 0%, #f4efff 48%, #edf5ff 100%);
+
+  --vd-shadow-shell: 0 22px 60px rgba(45, 64, 84, .12);
+  --vd-shadow-popover: 0 18px 44px rgba(48, 64, 90, .17);
+  --vd-shadow-sheet: 0 -24px 64px rgba(44, 61, 78, .18);
+  --vd-blur-glass: blur(24px) saturate(1.15);
+  --vd-blur-overlay: blur(30px) saturate(1.18);
+
+  --vd-shell-max: 468px;
+  --vd-shell-radius: 26px;
+  --vd-shell-padding-y: 16px;
+  --vd-shell-padding-x: 18px;
+  --vd-shell-bottom-reserve: 90px;
+
+  --vd-mic-size: 142px;
+  --vd-mic-ring-size: 168px;
+  --vd-icon-action-size: 34px;
+  --vd-dock-icon-column: 42px;
+  --vd-dock-control-height: 44px;
+
+  --vd-radius-xs: 8px;
+  --vd-radius-sm: 10px;
+  --vd-radius-md: 13px;
+  --vd-radius-lg: 18px;
+  --vd-radius-overlay: 22px;
+  --vd-radius-sheet: 26px 26px 0 0;
+  --vd-radius-pill: 999px;
+
+  --vd-space-1: 3px;
+  --vd-space-2: 5px;
+  --vd-space-3: 6px;
+  --vd-space-4: 7px;
+  --vd-space-5: 8px;
+  --vd-space-6: 10px;
+  --vd-space-7: 11px;
+  --vd-space-8: 12px;
+  --vd-space-9: 13px;
+  --vd-space-10: 14px;
+  --vd-space-11: 16px;
+  --vd-space-12: 18px;
+  --vd-space-13: 22px;
+  --vd-space-14: 24px;
+  --vd-space-15: 34px;
+
+  --vd-motion-fast: 140ms;
+  --vd-motion-base: 180ms;
+  --vd-motion-sheet: 220ms;
+  --vd-motion-transcript-enter: 420ms;
+  --vd-ease-standard: ease;
+  --vd-ease-enter: cubic-bezier(.2, .82, .2, 1);
+  --vd-ease-sheet: cubic-bezier(.2, .8, .2, 1);
+}
+
+body.theme-dark {
+  --vd-color-ink: #f5f7ff;
+  --vd-color-muted: #a9b4c6;
+  --vd-color-faint: #7f8ba1;
+  --vd-glass: rgba(255, 255, 255, .055);
+  --vd-glass-strong: rgba(255, 255, 255, .095);
+  --vd-line: rgba(255, 255, 255, .10);
+  --vd-row: rgba(255, 255, 255, .055);
+  --vd-gradient-canvas: linear-gradient(155deg, #0d1421 0%, #14192a 48%, #171326 100%);
+  --vd-shadow-shell: 0 24px 70px rgba(0, 0, 0, .42);
+  --vd-shadow-popover: 0 18px 46px rgba(0, 0, 0, .44);
+  --vd-shadow-sheet: 0 -26px 72px rgba(0, 0, 0, .48);
+}

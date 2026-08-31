@@ -64,35 +64,59 @@ function longestOrderedRun(reference: string[], observed: string[]): number {
   return longest;
 }
 
-export type QuoteScore = { score: number; coverage: number; ordered: number; matched: number };
+function openingOrderedRun(reference: string[], observed: string[]): number {
+  let longest = 0;
+  for (let right = 0; right < observed.length; right += 1) {
+    let run = 0;
+    while (
+      run < reference.length
+      && right + run < observed.length
+      && closeToken(reference[run], observed[right + run])
+    ) run += 1;
+    longest = Math.max(longest, run);
+  }
+  return longest;
+}
+
+export type QuoteScore = { score: number; coverage: number; ordered: number; matched: number; openingRun: number };
 
 export function scoreQuote(
   reference: string[],
   observed: string[],
-  { contextual = false, cued = false }: { contextual?: boolean; cued?: boolean } = {},
+  {
+    contextual = false,
+    cued = false,
+    anticipated = false,
+    signatureCued = false,
+  }: { contextual?: boolean; cued?: boolean; anticipated?: boolean; signatureCued?: boolean } = {},
 ): QuoteScore | null {
   if (reference.length < 3 || observed.length < 3) return null;
   const matched = overlapCount(reference, observed);
   const orderedMatched = orderedCount(reference, observed);
   const longestRun = longestOrderedRun(reference, observed);
+  const openingRun = openingOrderedRun(reference, observed);
   const coverage = matched / reference.length;
   const ordered = orderedMatched / reference.length;
   const runBonus = Math.min(0.12, Math.max(0, longestRun - 3) * 0.03);
-  const score = coverage * 0.66 + ordered * 0.34 + runBonus + (contextual ? 0.035 : 0) + (cued ? 0.02 : 0);
+  const anticipatedBonus = anticipated && openingRun >= 4 ? 0.055 : 0;
+  const score = coverage * 0.66 + ordered * 0.34 + runBonus + (contextual ? 0.035 : 0) + (cued ? 0.02 : 0) + anticipatedBonus;
 
-  const minimumMatched = reference.length <= 5 ? 3 : reference.length <= 11 ? 4 : 6;
+  const observedPrecision = matched / observed.length;
+  const strongCuedOpening = signatureCued && openingRun >= 3 && matched >= 3 && observedPrecision >= 0.5;
+  const minimumMatched = strongCuedOpening ? 3 : reference.length <= 5 ? 3 : reference.length <= 11 ? 4 : 6;
   const baseCoverage = reference.length <= 5 ? 0.78 : reference.length <= 11 ? 0.6 : 0.48;
   const strongPartialQuote = (contextual || cued) && longestRun >= 5;
-  const minimumCoverage = contextual || cued
-    ? Math.min(baseCoverage, strongPartialQuote ? 0.5 : baseCoverage)
+  const strongAnticipatedOpening = anticipated && openingRun >= 4 && matched >= 4;
+  const minimumCoverage = contextual || cued || strongAnticipatedOpening
+    ? Math.min(baseCoverage, strongAnticipatedOpening ? 0.38 : strongCuedOpening ? 0.35 : strongPartialQuote ? 0.5 : baseCoverage)
     : Math.max(0.66, baseCoverage);
-  const minimumScore = contextual ? 0.55 : cued ? 0.6 : 0.75;
-  const observedPrecision = matched / observed.length;
+  const minimumScore = strongAnticipatedOpening ? 0.5 : strongCuedOpening ? 0.39 : contextual ? 0.55 : cued ? 0.6 : 0.75;
   const weakUncontextualizedQuote = cued
     && !contextual
+    && !strongCuedOpening
     && score < 0.72
     && longestRun < 4
     && observedPrecision < 0.36;
   if (matched < minimumMatched || coverage < minimumCoverage || score < minimumScore || weakUncontextualizedQuote) return null;
-  return { score: Math.min(0.99, score), coverage, ordered, matched };
+  return { score: Math.min(0.99, score), coverage, ordered, matched, openingRun };
 }

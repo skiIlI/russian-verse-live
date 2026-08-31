@@ -1,16 +1,12 @@
 import { createReadStream, statSync } from "node:fs";
 import { createServer, get } from "node:http";
-import { dirname, extname, join, resolve, sep } from "node:path";
-import { tmpdir } from "node:os";
+import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createYouTubeAudioCache } from "./youtube-audio-cache.mjs";
-import { extractYouTubeTranscript } from "./youtube-captions.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const host = "127.0.0.1";
 const port = Number.parseInt(process.env.VERSE_DETECTOR_PORT ?? "4173", 10);
 const localUrl = `http://${host}:${port}/`;
-const youtubeAudioCache = createYouTubeAudioCache(join(tmpdir(), `verse-listener-youtube-${process.pid}`));
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -35,74 +31,11 @@ function resolveRequestPath(requestUrl = "/") {
   }
 }
 
-async function serveYouTubeTranscript(request, response) {
-  const url = new URL(request.url, localUrl);
-  try {
-    const result = await extractYouTubeTranscript(url.searchParams.get("videoId") ?? "", url.searchParams.get("language") ?? "ru");
-    const body = JSON.stringify(result);
-    response.writeHead(200, {
-      "Cache-Control": "no-store",
-      "Content-Length": Buffer.byteLength(body),
-      "Content-Type": "application/json; charset=utf-8",
-    }).end(body);
-  } catch (error) {
-    const body = JSON.stringify({ error: error instanceof Error ? error.message : "Transcript import failed." });
-    response.writeHead(422, {
-      "Cache-Control": "no-store",
-      "Content-Length": Buffer.byteLength(body),
-      "Content-Type": "application/json; charset=utf-8",
-    }).end(body);
-  }
-}
-
-async function serveYouTubeAudio(request, response) {
-  const url = new URL(request.url, localUrl);
-  try {
-    await youtubeAudioCache.serve(url.searchParams.get("videoId") ?? "", request, response);
-  } catch (error) {
-    const body = error instanceof Error ? error.message : "YouTube audio failed.";
-    response.writeHead(422, {
-      "Cache-Control": "no-store",
-      "Content-Length": Buffer.byteLength(body),
-      "Content-Type": "text/plain; charset=utf-8",
-    }).end(body);
-  }
-}
-
-async function serveYouTubeClip(request, response) {
-  const url = new URL(request.url, localUrl);
-  const start = Math.max(0, Number(url.searchParams.get("start") ?? 0));
-  const duration = Math.min(60 * 60, Math.max(10, Number(url.searchParams.get("duration") ?? 600)));
-  try {
-    await youtubeAudioCache.serveClip(url.searchParams.get("videoId") ?? "", start, duration, request, response);
-  } catch (error) {
-    const body = error instanceof Error ? error.message : "YouTube clip failed.";
-    response.writeHead(422, {
-      "Cache-Control": "no-store",
-      "Content-Length": Buffer.byteLength(body),
-      "Content-Type": "text/plain; charset=utf-8",
-    }).end(body);
-  }
-}
-
 const server = createServer((request, response) => {
   if (request.method !== "GET" && request.method !== "HEAD") {
     response.writeHead(405, { Allow: "GET, HEAD" }).end();
     return;
   }
-  if (request.url?.startsWith("/api/youtube-transcript")) {
-    void serveYouTubeTranscript(request, response);
-    return;
-  }
-  if (request.url?.startsWith("/api/youtube-audio")) {
-    void serveYouTubeAudio(request, response);
-    return;
-  }
-  if (request.url?.startsWith("/api/youtube-clip")) {
-    void serveYouTubeClip(request, response);
-    return;
-  }
-
   let filePath;
   try {
     filePath = resolveRequestPath(request.url);
@@ -173,5 +106,5 @@ server.listen(port, host, () => {
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
-  process.on(signal, () => server.close(() => void youtubeAudioCache.cleanup().finally(() => process.exit(0))));
+  process.on(signal, () => server.close(() => process.exit(0)));
 }

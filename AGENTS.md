@@ -56,6 +56,9 @@ This guide combines the reusable working, safety, testing, browser-control, scre
 
 ## UI design workflow
 
+- Before every visual/UI task, read `design/AGENTS.design.md` and follow its routing to the relevant files in `design/`.
+- Treat `design/reference/quiet-focus-glass-approved.html` as the canonical visual and interaction source of truth.
+- When designing a new surface without a supplied prototype, use the full `design/` foundation, component, motion, token, guardrail, and acceptance guidance before editing production UI.
 - Treat visual design, spacing, colors, layout, responsive behavior, light/dark polish, and control-state requests as design work.
 - Existing production UI is the source of truth for existing surfaces. Inspect the owning markup and CSS before changing it.
 - Preserve the compact centered mobile shell, safe-area padding, responsive desktop frame, restrained card hierarchy, and both light and dark themes unless the user requests a redesign.
@@ -71,7 +74,7 @@ This guide combines the reusable working, safety, testing, browser-control, scre
 
 - Be especially careful with microphone permission, speech recognition, live monitoring, recording, playback, raw audio, browser visibility, and mobile/PWA lifecycle behavior.
 - Microphone features must require an explicit user action and a secure context. Never request microphone permission on page load.
-- Feature-detect `navigator.mediaDevices`, `getUserMedia`, `SpeechRecognition`, `AudioContext`, and `MediaRecorder` as applicable, and show a specific useful unsupported or permission message.
+- Feature-detect `navigator.mediaDevices`, `getUserMedia`, `AudioContext`, and `MediaRecorder` as applicable, and show a specific useful unsupported or permission message.
 - Keep live monitoring opt-in and warn about headphones or acoustic feedback. Never silently route a live microphone to speakers.
 - Preserve the existing speech-oriented constraints for verse listening unless the requested behavior needs a separate input profile.
 - Do not let the verse listener and a test recorder compete for microphone ownership. Stop and release the previous owner before starting the other workflow.
@@ -171,6 +174,7 @@ This guide combines the reusable working, safety, testing, browser-control, scre
 ## Testing workflow
 
 - Do not run build, deploy, or publish commands unless the user explicitly asks. Compilation and checks are allowed.
+- Before every final handoff, query the private Supabase feedback reports again and compare their IDs and creation times with the reports already handled during the run. If a newer report appeared while coding, inspect it and make any clear, task-scoped detector or reporting adjustment before finishing. Leave an unclear report intact and call out the question instead of guessing. Perform any user-authorized report cleanup only after this final sweep so a newly submitted report is not deleted or missed.
 - Establish the current test baseline before non-trivial behavior changes when practical.
 - After normal code edits, run `npm test`.
 - After parser source edits, run `npm run compile:parser` before `npm test`.

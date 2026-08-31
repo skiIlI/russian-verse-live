@@ -10,6 +10,7 @@ export class RollingAudioBuffer {
     this.chunks = [];
     this.totalSamples = 0;
     this.ownsStreamTracks = true;
+    this.captureRequestId = 0;
   }
 
   get audioTrack() {
@@ -22,7 +23,8 @@ export class RollingAudioBuffer {
 
   async start() {
     await this.stop({ keepAudio: false });
-    this.stream = await navigator.mediaDevices.getUserMedia({
+    const requestId = ++this.captureRequestId;
+    const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         channelCount: 1,
         echoCancellation: true,
@@ -30,19 +32,25 @@ export class RollingAudioBuffer {
         autoGainControl: true,
       },
     });
+    if (requestId !== this.captureRequestId) {
+      for (const track of stream.getTracks()) track.stop();
+      throw new DOMException("Microphone start was superseded.", "AbortError");
+    }
+    this.stream = stream;
     this.ownsStreamTracks = true;
-    return this.startCapture();
+    return this.startCapture(requestId);
   }
 
   async startFromTrack(track) {
     await this.stop({ keepAudio: false });
     if (!track || track.kind !== "audio") throw new Error("An audio track is required.");
+    const requestId = ++this.captureRequestId;
     this.stream = new MediaStream([track]);
     this.ownsStreamTracks = false;
-    return this.startCapture();
+    return this.startCapture(requestId);
   }
 
-  async startCapture() {
+  async startCapture(requestId = this.captureRequestId) {
     const track = this.audioTrack;
     if (track && "contentHint" in track) track.contentHint = "speech";
 
@@ -50,12 +58,14 @@ export class RollingAudioBuffer {
     this.context = new AudioContextClass({ latencyHint: "interactive" });
     this.sampleRate = this.context.sampleRate;
     await this.context.resume();
+    if (requestId !== this.captureRequestId) throw new DOMException("Microphone start was superseded.", "AbortError");
     this.source = this.context.createMediaStreamSource(this.stream);
     this.silentGain = this.context.createGain();
     this.silentGain.gain.value = 0;
 
     if (this.context.audioWorklet && window.AudioWorkletNode) {
-      await this.context.audioWorklet.addModule("./audio-worklet.js?v=13");
+      await this.context.audioWorklet.addModule("./audio-worklet.js?v=26");
+      if (requestId !== this.captureRequestId) throw new DOMException("Microphone start was superseded.", "AbortError");
       this.capture = new AudioWorkletNode(this.context, "rolling-audio-capture", {
         numberOfInputs: 1,
         numberOfOutputs: 1,
@@ -134,6 +144,7 @@ export class RollingAudioBuffer {
   }
 
   async stop({ keepAudio = true } = {}) {
+    this.captureRequestId += 1;
     if (this.capture) {
       try { this.capture.disconnect(); } catch {}
       if ("port" in this.capture) this.capture.port.onmessage = null;

@@ -2,6 +2,7 @@ import { BibleVerseReferenceDetector, type VerseReference } from "./bibleVersePa
 import { BOOKS, type SupportedLanguage } from "./bookDefinitions";
 import { detectNavigationIntent } from "./navigationDetector";
 import { matchQuotedVerses, type SegmentContext, type VerseQuoteMatch } from "./quoteMatcher";
+import { anticipateReadingBoundaries } from "./readingBoundary";
 import { formatClock, parseTranscript, type TranscriptSegment } from "./transcriptInput";
 import { loadVerseCorpus, type IndexedVerse, type VerseCorpusIndex } from "./verseCorpus";
 
@@ -328,6 +329,15 @@ export async function interpretTranscript(
   const explicit = collectExplicit(segments, language, ignorePrayer);
   const matches = matchQuotedVerses(segments, activeCorpus, explicit.contexts, { ignoreMusic, ignorePrayer });
   const events = [...explicit.events, ...quoteEvents(matches, segments, language)];
+  events.push(...anticipateReadingBoundaries(events, segments, activeCorpus).map((boundary) => makeEvent(
+    segments[boundary.segmentIndex],
+    "advance",
+    "NEXT_VERSE",
+    fromVerse(boundary.verse, language),
+    boundary.confidence,
+    "reading-boundary",
+    boundary.sourceText,
+  )));
   expandPartialRanges(events, language);
   resolveNavigation(events, activeCorpus);
   events.push(...deriveReadingBoundaries(events, segments));

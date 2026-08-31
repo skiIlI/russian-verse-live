@@ -1,193 +1,148 @@
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
-const [html, app, styles, manifestText, worker, audio, feedback, feedbackApi, feedbackUi, sourceContext, excerpts, moreMenu, micTest, micMeter, micRecording, transcriptLab, youtubeReview, localServer, packageText, interpreter] = await Promise.all([
-  read("index.html"),
-  read("app.js"),
-  read("styles.css"),
-  read("manifest.webmanifest"),
-  read("service-worker.js"),
-  read("audio-ring-buffer.js"),
-  read("feedback-store.js"),
-  read("feedback-api.js"),
-  read("feedback-ui.js"),
-  read("source-context.js"),
-  read("excerpts.js"),
-  read("more-menu.js"),
-  read("mic-test.js"),
-  read("mic-level-meter.js"),
-  read("mic-recording.js"),
-  read("transcript-lab.js"),
-  read("youtube-review.js"),
-  read("scripts/start-local-server.mjs"),
-  read("package.json"),
-  read("interpreter.js"),
-]);
-const [timeline, youtubeAudioTranscriber, whisperSession, whisperWorker, youtubeAudioServer] = await Promise.all([
-  read("transcript-timeline.js"),
-  read("youtube-audio-transcriber.js"),
-  read("whisper-session.js"),
-  read("whisper-worker.js"),
-  read("scripts/youtube-audio.mjs"),
-]);
-const [benchmark, benchmarkCore, audioCache] = await Promise.all([
-  read("transcription-benchmark.js"),
-  read("transcription-benchmark-core.js"),
-  read("scripts/youtube-audio-cache.mjs"),
-]);
+const [
+  html, app, styles, manifestText, worker, sourceContext, server, packageText,
+  feedbackUi, feedbackApi, micTest, micMeter, micRecording, serviceTranscriber,
+  selectControl, uiShell, listenerPreferences, transcriptProgress, whisperSession, whisperWorker,
+  whisperModels, schema, validation, database, feedbackFunction,
+] = await Promise.all([
+  "index.html", "app.js", "styles.css", "manifest.webmanifest", "service-worker.js",
+  "source-context.js", "scripts/start-local-server.mjs", "package.json", "feedback-ui.js",
+  "feedback-api.js", "mic-test.js", "mic-level-meter.js", "mic-recording.js",
+  "service-transcriber.js", "select-control.js", "ui-shell.js", "listener-preferences.js", "transcript-progress.js",
+  "whisper-session.js", "whisper-worker.js", "whisper-models.js", "supabase/schema.sql",
+  "supabase/functions/verse-feedback/validation.ts", "supabase/functions/verse-feedback/database.ts",
+  "supabase/functions/verse-feedback/index.ts",
+].map(read));
 
-assert.match(html, /Start Listening/);
+assert.match(html, /class="app" id="app"/);
+assert.match(html, /id="heroMic"/);
+assert.match(html, /Start listening/);
+assert.match(html, /Peek at live transcript/);
+assert.match(html, /data-sheet="transcript"/);
+assert.match(html, /id="reportTranscriptButton"/);
+assert.match(app, /reportTranscriptButton\.addEventListener/);
+assert.match(html, /data-sheet="transcriber"/);
+assert.match(html, /data-sheet="mic"/);
+assert.match(html, /Report feedback/);
 assert.match(html, /Русский/);
 assert.match(html, /English/);
-assert.match(html, /Report a missed or wrong verse/);
+assert.match(html, /Whisper Base/);
+assert.match(html, /Whisper Small/);
+assert.match(html, /Whisper Medium/);
+assert.match(html, /Whisper Large Turbo/);
+assert.doesNotMatch(html, /Browser speech service|Whisper Tiny/);
+assert.match(html, /Live · Every 1 second/);
+assert.match(html, /data-pref="pace"/);
+assert.doesNotMatch(html, /Download model|Downloaded on this device|Not downloaded yet/);
+assert.match(html, /id="bibleVersion"/);
+assert.match(listenerPreferences, /NASB · Default/);
+assert.match(listenerPreferences, /NKJV/);
+assert.match(listenerPreferences, /ESV/);
+assert.match(listenerPreferences, /NIV/);
+assert.match(html, /📭 Verse missed/);
+assert.match(html, /⏱️ Detected too late/);
+assert.match(html, /🗣️ Misinterpreted speech/);
+assert.match(html, /📖 Wrong verse/);
 assert.match(html, /Last 15 seconds/);
 assert.match(html, /Last 60 seconds/);
-assert.match(html, /Download current source context/);
-assert.match(html, /Mic &amp; recording test/);
-assert.match(html, /role="meter"/);
-assert.match(html, /Monitor input/);
-assert.match(html, /Stop recording/);
+assert.doesNotMatch(html, /Last 5 seconds/);
+assert.doesNotMatch(html, /YouTube|Four-model|benchmark|Load Aug 16|Choose from our channel/iu);
+assert.doesNotMatch(html, /What was said|What did the app catch|Add a correction/);
+assert.match(html, /Recent transcript/);
+assert.match(html, /Recent audio/);
 assert.match(html, /Recorded microphone test playback/);
-assert.match(html, /Transcript interpreter/);
-assert.match(html, /English · NASB profile/);
-assert.match(html, /Load Aug 16 service/);
-assert.doesNotMatch(html, /data-analysis-view|Console|Annotated/);
-assert.match(html, /id="serviceVideoFrame"/);
-assert.match(html, /Y5bbaQmyXKI/);
-assert.match(html, /id="importYoutubeTranscript"/);
-assert.match(html, /id="startYoutubeTranscription"/);
-assert.match(html, /Whisper Base · Recommended/);
-assert.match(html, /Four-model transcription benchmark/);
-assert.match(html, /id="benchmarkExportJson"/);
-assert.match(html, /id="benchmarkModels"/);
-assert.match(html, /id="copyCompleteAnalysis"/);
-assert.match(html, /What was wrong\?/);
-assert.doesNotMatch(html, /Download app files|russian-verse-live\.zip|Automation Core/);
-assert.match(html, /app\.js\?v=13/);
-assert.match(html, /aria-label="Live speech transcript"/);
-assert.match(app, /parser\.js\?v=13/);
-assert.match(app, /configureTranscriptLab/);
+assert.match(html, /Download current source context/);
+assert.match(html, /app\.js\?v=26/);
+
+assert.match(app, /parser\.js\?v=26/);
+assert.match(app, /configureServiceTranscriber/);
+assert.doesNotMatch(app, /configureTranscriptLab|youtube|benchmark/iu);
 assert.match(app, /new WhisperSession/);
-assert.match(app, /ru-RU/);
-assert.match(app, /en-US/);
-assert.match(app, /recognition\.continuous = true/);
-assert.match(app, /interimTranscript = liveLines/);
-assert.match(app, /navigator\.vibrate/);
-assert.match(app, /request\("screen"\)/);
+assert.match(app, /intervalMs: Number\(elements\.recognitionPace\.value\)/);
+assert.match(app, /whisperSessionGeneration/);
+assert.match(app, /detail\.phase === "transcribing"/);
 assert.match(app, /configureFeedbackUI/);
 assert.match(app, /configureMicTest/);
-assert.match(app, /configureMoreMenu\(elements\)/);
-assert.match(app, /await micTest\?\.stopInput/);
-assert.match(app, /if \(!wantsListening\)[\s\S]*rollingAudio\.stop/);
-assert.match(audio, /getUserMedia/);
-assert.match(audio, /createWav/);
-assert.match(audio, /maxSeconds = 60/);
-assert.match(audio, /startFromTrack/);
-assert.match(feedback, /indexedDB\.open/);
-assert.doesNotMatch(feedback, /base64DataUrl|issues\/new/);
+assert.match(app, /schemaVersion: 2/);
+assert.match(app, /timing/);
+assert.match(app, /request\("screen"\)/);
+assert.match(app, /navigator\.vibrate/);
+
+assert.match(serviceTranscriber, /interpretTranscript/);
+assert.match(serviceTranscriber, /initialLanguage/);
+assert.match(serviceTranscriber, /onReport/);
+assert.doesNotMatch(serviceTranscriber, /YouTube|benchmark/iu);
+assert.match(selectControl, /data-select-for/);
+assert.match(selectControl, /aria-selected/);
+assert.match(uiShell, /openPopover/);
+assert.match(uiShell, /openSheet/);
+assert.match(transcriptProgress, /activeRunId === detail\.runId/);
+
+assert.match(styles, /width:min\(100%,468px\)/);
+assert.match(styles, /@keyframes quietRing/);
+assert.match(styles, /@keyframes verseDetectedIn/);
+assert.match(styles, /@keyframes transcriptSlideIn/);
+assert.match(styles, /\.app\.model-loading \.mic/);
+assert.match(styles, /html\[data-theme="dark"\] \.select-trigger/);
+assert.match(styles, /\.loading-wave i/);
+assert.match(styles, /background:rgba\(86,119,200,\.19\)/);
+
+assert.match(feedbackUi, /Saved privately — will retry when connected/);
+assert.match(feedbackUi, /elements\.feedbackTiming\.value/);
+assert.match(feedbackUi, /elements\.feedbackSheetHost\.append/);
 assert.match(feedbackApi, /functions\/v1\/verse-feedback/);
-assert.match(feedbackApi, /flushFeedbackQueue/);
-assert.match(feedbackUi, /configureFeedbackUI/);
-assert.match(feedbackUi, /Saved — will retry when connected/);
-assert.match(moreMenu, /downloadCurrentSourceContext/);
 assert.match(micTest, /getUserMedia/);
-assert.match(micTest, /Live monitor on/);
 assert.match(micTest, /beforeStart/);
 assert.match(micMeter, /getFloatTimeDomainData/);
 assert.match(micMeter, /visibilitychange/);
 assert.match(micRecording, /MediaRecorderClass/);
 assert.match(micRecording, /createObjectURL/);
-assert.doesNotMatch(html, /Saved feedback|Send to Codex|Save on this device/);
-assert.match(sourceContext, /raw\.githubusercontent\.com/);
-assert.match(sourceContext, /verse-listener-source-context\.txt/);
-assert.match(sourceContext, /tests\/audio-buffer\.test\.mjs/);
-assert.match(sourceContext, /tests\/mic-test\.test\.mjs/);
-assert.match(sourceContext, /tests\/interpreter\.test\.mjs/);
-assert.match(sourceContext, /src\/transcriptInterpreter\.ts/);
-assert.match(sourceContext, /youtube-review\.js/);
-assert.match(sourceContext, /transcript-feedback\.js/);
-assert.match(sourceContext, /transcript-review\.js/);
-assert.match(sourceContext, /scripts\/start-local-server\.mjs/);
-assert.match(sourceContext, /scripts\/youtube-captions\.mjs/);
-assert.match(sourceContext, /scripts\/youtube-audio\.mjs/);
-assert.match(sourceContext, /whisper-worker\.js/);
-assert.match(sourceContext, /AGENTS\.md/);
-assert.match(excerpts, /english-second-timothy-range/);
-assert.match(styles, /--blue: #3b82f6/);
-assert.match(styles, /--rose: #e11d48/);
-assert.match(styles, /--purple: #7c3aed/);
-assert.match(transcriptLab, /interpretTranscript/);
-assert.match(transcriptLab, /formatConsoleEvent/);
-assert.match(transcriptLab, /SERVICE_TRANSCRIPT/);
-assert.match(transcriptLab, /configureYouTubeReview/);
-assert.match(transcriptLab, /buildCompleteReviewPackage/);
-assert.match(transcriptLab, /api\/youtube-transcript/);
-assert.match(transcriptLab, /configureYouTubeAudioTranscriber/);
-assert.match(timeline, /analysis-timestamp-button/);
-assert.match(timeline, /analysis-event-actions/);
-assert.match(timeline, /groupSermonSections/);
-assert.match(youtubeAudioTranscriber, /captureStream/);
-assert.match(youtubeAudioTranscriber, /startFromTrack/);
-assert.match(whisperSession, /resampleTo16Khz/);
-assert.match(whisperWorker, /automatic-speech-recognition/);
+
+assert.match(whisperSession, /whisper-worker\.js\?v=26/);
 assert.match(whisperWorker, /@huggingface\/transformers@3\.8\.1/);
-assert.doesNotMatch(whisperWorker, /@xenova\/transformers@3\.8\.1/);
-assert.match(whisperWorker, /Xenova\/whisper-base/);
-assert.match(youtubeAudioServer, /adaptiveFormats/);
-assert.match(benchmark, /selectedModels|runWorker/);
-assert.match(benchmark, /benchmarkExportJson/);
-assert.match(benchmarkCore, /wordErrorRate/);
-assert.match(audioCache, /yt-dlp/);
-assert.match(audioCache, /serveClip/);
-assert.match(youtubeReview, /seekTo/);
-assert.match(youtubeReview, /playVideo/);
-assert.match(youtubeReview, /youtube-nocookie\.com/);
-assert.match(localServer, /127\.0\.0\.1/);
-assert.match(localServer, /4173/);
-assert.match(localServer, /api\/youtube-audio/);
-assert.equal(JSON.parse(packageText).scripts.start, "node scripts/start-local-server.mjs");
-assert.match(interpreter, /NEXT_VERSE/);
-assert.match(interpreter, /verse-text-match/);
+assert.match(whisperWorker, /max_new_tokens:\s*64/);
+assert.match(whisperWorker, /no_repeat_ngram_size:\s*3/);
+assert.doesNotMatch(whisperWorker, /WhisperTextStreamer|type: "partial"/);
+assert.match(whisperModels, /Xenova\/whisper-base/);
+assert.match(whisperModels, /Xenova\/whisper-small/);
+assert.match(whisperModels, /Xenova\/whisper-medium/);
+assert.match(whisperModels, /onnx-community\/whisper-large-v3-turbo/);
+assert.doesNotMatch(whisperModels, /whisper-tiny/);
+
+assert.doesNotMatch(sourceContext, /youtube|benchmark|transcript-lab/iu);
+assert.match(sourceContext, /service-transcriber\.js/);
+assert.match(sourceContext, /ui-shell\.js/);
+assert.match(sourceContext, /select-control\.js/);
+assert.match(sourceContext, /design\/reference\/quiet-focus-glass-approved\.html/);
+assert.match(sourceContext, /design\/reference\/quiet-focus-glass-approved\.html/);
+assert.doesNotMatch(worker, /youtube|benchmark|transcript-lab/iu);
+assert.match(worker, /verse-listener-v26/);
+assert.match(worker, /service-transcriber\.js\?v=26/);
+assert.match(worker, /styles\.css\?v=26/);
+assert.match(worker, /key\.startsWith\(APP_CACHE_PREFIX\)/);
+assert.match(worker, /url\.origin !== self\.location\.origin/);
+assert.doesNotMatch(server, /youtube|\/api\//iu);
+
+assert.match(schema, /'late'/);
+assert.match(schema, /'misinterpreted'/);
+assert.match(schema, /timing text not null/);
+assert.match(validation, /value\.slice\(0, 120\)/);
+assert.match(validation, /'5-plus'/);
+assert.match(database, /timing: string/);
+assert.match(feedbackFunction, /timing: metadata\.timing/);
 
 const manifest = JSON.parse(manifestText);
 assert.equal(manifest.display, "standalone");
-assert.equal(manifest.start_url, "./?v=13");
-assert.match(worker, /verse-listener-v13/);
-assert.match(worker, /audio-worklet\.js\?v=13/);
-assert.match(worker, /feedback-api\.js\?v=13/);
-assert.match(worker, /feedback-ui\.js\?v=13/);
-assert.match(worker, /more-menu\.js\?v=13/);
-assert.match(worker, /mic-level-meter\.js\?v=13/);
-assert.match(worker, /mic-recording\.js\?v=13/);
-assert.match(worker, /mic-test\.js\?v=13/);
-assert.match(worker, /interpreter\.js\?v=13/);
-assert.match(worker, /transcript-lab\.js\?v=13/);
-assert.match(worker, /youtube-review\.js\?v=13/);
-assert.match(worker, /transcript-feedback\.js\?v=13/);
-assert.match(worker, /transcript-review\.js\?v=13/);
-assert.match(worker, /transcript-timeline\.js\?v=13/);
-assert.match(worker, /transcription-benchmark\.js\?v=13/);
-assert.match(worker, /youtube-audio-transcriber\.js\?v=13/);
-assert.match(worker, /whisper-session\.js\?v=13/);
-assert.match(worker, /whisper-worker\.js\?v=13/);
-assert.match(worker, /data\/russyn\.json/);
-assert.match(worker, /data\/engwebp\.json/);
-assert.match(worker, /fetch\(event\.request\)/);
-assert.match(worker, /url\.pathname\.includes\("\/data\/"\)/);
+assert.equal(manifest.start_url, "./?v=26");
+const packageJson = JSON.parse(packageText);
+assert.equal(packageJson.version, "3.0.0");
+assert.doesNotMatch(packageJson.scripts.test, /youtube|benchmark|transcript-review|transcript-timeline/iu);
+assert.equal(packageJson.scripts.start, "node scripts/start-local-server.mjs");
 
-const audioFiles = [
-  "malachi-4-5-6.wav",
-  "first-corinthians-16-14.wav",
-  "mark-10-13.wav",
-  "genesis-18-19.wav",
-  "luke-12-13.wav",
-];
-const assetsPath = fileURLToPath(new URL("assets/", root));
-await Promise.all(audioFiles.map((file) => access(join(assetsPath, file))));
-await Promise.all(["russyn.json", "engwebp.json"].map((file) => access(join(fileURLToPath(new URL("data/", root)), file))));
-
-console.log("Web contract: bilingual PWA, transcript interpreter, mic testing, rolling feedback, shared inbox, and current source export present");
+await Promise.all(["russyn.json", "engwebp.json"].map((file) => access(fileURLToPath(new URL(`data/${file}`, root)))));
+console.log("Web contract: approved glass UI, bilingual detection, local Whisper, private feedback, mic testing, and PWA delivery present");

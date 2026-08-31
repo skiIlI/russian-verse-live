@@ -23,4 +23,25 @@ capped.push(new Float32Array([1, 2, 3, 4, 5, 6]));
 assert.equal(capped.totalSamples, 4);
 assert.deepEqual([...capped.takeLast(1)], [3, 4, 5, 6]);
 
-console.log("Audio buffer: rolling trim and WAV export passed");
+let resolvePermission;
+const pendingPermission = new Promise((resolve) => { resolvePermission = resolve; });
+const originalNavigator = globalThis.navigator;
+Object.defineProperty(globalThis, "navigator", {
+  configurable: true,
+  value: { mediaDevices: { getUserMedia: () => pendingPermission } },
+});
+const superseded = new RollingAudioBuffer();
+const staleStart = superseded.start();
+await Promise.resolve();
+await Promise.resolve();
+await superseded.stop({ keepAudio: false });
+let staleTrackStopped = false;
+resolvePermission({
+  getAudioTracks: () => [{ kind: "audio" }],
+  getTracks: () => [{ stop: () => { staleTrackStopped = true; } }],
+});
+await assert.rejects(staleStart, (error) => error?.name === "AbortError");
+assert.equal(staleTrackStopped, true, "a late permission result must not revive a stopped capture");
+Object.defineProperty(globalThis, "navigator", { configurable: true, value: originalNavigator });
+
+console.log("Audio buffer: rolling trim, WAV export, and stale-start cancellation passed");

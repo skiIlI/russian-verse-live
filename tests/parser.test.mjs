@@ -61,6 +61,15 @@ assert.equal(
   "Malachi 4:5–6",
 );
 
+const russianNumericRange = new BibleVerseReferenceDetector("ru");
+russianNumericRange.consume("Давайте мы откроем Левит.", startedAt);
+russianNumericRange.consume("23 глава 15", startedAt + 1_000);
+assert.equal(
+  russianNumericRange.consume("23 глава, 15-16 стих, я хочу зачитать.", startedAt + 2_000)[0]?.canonical,
+  "Leviticus 23:15–16",
+  "a hyphenated Russian range must open at its first verse and retain the next verse",
+);
+
 const splitOrdinal = new BibleVerseReferenceDetector("ru");
 splitOrdinal.consume("Откроем Евангелие от Матфея, двадцать", startedAt);
 assert.equal(splitOrdinal.consume("четвертая глава, третий стих", startedAt + 1_000)[0]?.canonical, "Matthew 24:3");
@@ -127,6 +136,43 @@ assert.equal(cancelledRussianBook.consume("Марка 10:13", startedAt)[0]?.can
 assert.deepEqual(cancelledRussianBook.consume("Нет, братья, не Марка.", startedAt + 1_000), []);
 assert.equal(cancelledRussianBook.readContext(startedAt + 1_000).canonicalBook, null);
 
+for (const phrase of [
+  "В Евангелии от Яна первая голова, первый стих.",
+  "Ивангелия Тиана. Первая глава, первый стих.",
+  "Ангелия Тиана, первая голова, первый стих.",
+]) {
+  const detector = new BibleVerseReferenceDetector("ru");
+  assert.equal(detector.consume(phrase, startedAt)[0]?.canonical, "John 1:1", `John Gospel ASR repair failed: ${phrase}`);
+}
+
+const numericRussianOrdinals = new BibleVerseReferenceDetector("ru");
+assert.deepEqual(numericRussianOrdinals.consume("Евангелия от Марка.", startedAt), []);
+assert.equal(
+  numericRussianOrdinals.consume("Я буду читать 16-го главы с 15-го стиха.", startedAt + 1_000)[0]?.canonical,
+  "Mark 16:15",
+  "numeric Russian ordinal suffixes must not turn the verse into the chapter",
+);
+
+const inflectedSecondPeter = new BibleVerseReferenceDetector("ru");
+assert.deepEqual(inflectedSecondPeter.consume("Во втором послании Петра с первой главы, с", startedAt), []);
+assert.equal(inflectedSecondPeter.consume("десятого стиха", startedAt + 1_000)[0]?.canonical, "2 Peter 1:10");
+
+const trailingOrdinalEpistle = new BibleVerseReferenceDetector("ru");
+assert.deepEqual(trailingOrdinalEpistle.consume("Послание к Коринфянам второе говорит", startedAt), []);
+assert.equal(trailingOrdinalEpistle.readContext(startedAt).canonicalBook, "2 Corinthians");
+
+const nearestBookChapter = new BibleVerseReferenceDetector("ru");
+assert.deepEqual(nearestBookChapter.consume("первая глава. Евреям тринадцатая глава.", startedAt), []);
+assert.equal(nearestBookChapter.consume("Пятый стих.", startedAt + 1_000)[0]?.canonical, "Hebrews 13:5");
+
+const contextualClockTime = new BibleVerseReferenceDetector("ru");
+assert.deepEqual(contextualClockTime.consume("Псалом пятнадцатый", startedAt), []);
+assert.deepEqual(contextualClockTime.consume("Я посплю до без 15:10, а там поеду", startedAt + 1_000), []);
+
+const ordinaryDanielCount = new BibleVerseReferenceDetector("ru");
+assert.deepEqual(ordinaryDanielCount.consume("Это желание Даниила три раза молиться", startedAt), []);
+assert.equal(ordinaryDanielCount.readContext(startedAt).chapter, null);
+
 const englishCases = [
   { expected: "Matthew 19:20", parts: ["Matthew 19:20"] },
   { expected: "Matthew 19:20", parts: ["Let's open our Bibles to Matthew.", "We are starting from chapter nineteen.", "Now this is verse twenty."] },
@@ -144,6 +190,50 @@ const englishCases = [
 for (const testCase of englishCases) {
   assert.equal(detect("en", testCase.parts)[0]?.canonical, testCase.expected);
 }
+
+const compactEnglishReference = new BibleVerseReferenceDetector("en");
+assert.equal(compactEnglishReference.consume("Deuteronomy 3327", startedAt)[0]?.canonical, "Deuteronomy 33:27");
+
+const compactExodusReference = new BibleVerseReferenceDetector("en");
+assert.equal(compactExodusReference.consume("Exodus 3314", startedAt)[0]?.canonical, "Exodus 33:14");
+
+const spokenEnglishRange = new BibleVerseReferenceDetector("en");
+assert.equal(spokenEnglishRange.consume("Psalm 46, two and three.", startedAt)[0]?.canonical, "Psalms 46:2–3");
+
+const hyphenatedEnglishRange = new BibleVerseReferenceDetector("en");
+assert.equal(
+  hyphenatedEnglishRange.consume("Second Timothy chapter 3, verses 16-17", startedAt)[0]?.canonical,
+  "2 Timothy 3:16–17",
+);
+
+const splitEnglishRange = new BibleVerseReferenceDetector("en");
+assert.deepEqual(splitEnglishRange.consume("Psalm 46", startedAt), []);
+assert.equal(splitEnglishRange.consume("4 through 7. Here", startedAt + 2_500)[0]?.canonical, "Psalms 46:4–7");
+
+const possessiveSplitChapter = new BibleVerseReferenceDetector("en");
+assert.deepEqual(possessiveSplitChapter.consume("and again in John's", startedAt), []);
+assert.deepEqual(possessiveSplitChapter.consume("7 on the last day of the feast", startedAt + 2_000), []);
+assert.equal(possessiveSplitChapter.readContext(startedAt + 2_000).chapter, 7, "John's followed by 7 must establish John 7 context");
+
+const patientVerseLabel = new BibleVerseReferenceDetector("en");
+assert.deepEqual(patientVerseLabel.consume("to the New Testament, John 4 verses", startedAt), []);
+assert.equal(patientVerseLabel.readContext(startedAt).chapter, 4, "an unfinished plural verse label must retain chapter context only");
+assert.equal(patientVerseLabel.consume("13 and 14 says Jesus answered", startedAt + 2_000)[0]?.canonical, "John 4:13–14");
+
+const possessiveSameLine = new BibleVerseReferenceDetector("en");
+assert.deepEqual(possessiveSameLine.consume("Look again in John's 7", startedAt), []);
+assert.equal(possessiveSameLine.readContext(startedAt).chapter, 7);
+
+const staleBareRange = new BibleVerseReferenceDetector("en");
+assert.deepEqual(staleBareRange.consume("Psalm 46", startedAt), []);
+assert.deepEqual(staleBareRange.consume("4 through 7 people", startedAt + 20_000), []);
+
+const repeatedPsalmBook = new BibleVerseReferenceDetector("en");
+assert.deepEqual(repeatedPsalmBook.consume("Psalm 102. I'm letting the Psalm teach us.", startedAt), []);
+assert.equal(repeatedPsalmBook.readContext(startedAt).chapter, 102);
+
+const ambiguousCompactReference = new BibleVerseReferenceDetector("en");
+assert.deepEqual(ambiguousCompactReference.consume("Matthew 123", startedAt), []);
 
 const englishCorrection = new BibleVerseReferenceDetector("en");
 assert.equal(englishCorrection.consume("Mark 10:13", startedAt)[0]?.canonical, "Mark 10:13");

@@ -1,0 +1,104 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "meta": {
+    "name": "Verse Detector \u00b7 Quiet Focus Glass",
+    "status": "canonical",
+    "reference": "reference/quiet-focus-glass-approved.html"
+  },
+  "color": {
+    "ink": {
+      "$type": "color",
+      "$value": "#16202a"
+    },
+    "muted": {
+      "$type": "color",
+      "$value": "#72808d"
+    },
+    "faint": {
+      "$type": "color",
+      "$value": "#9aa5af"
+    },
+    "accent": {
+      "$type": "color",
+      "$value": "#6675f5"
+    },
+    "accent2": {
+      "$type": "color",
+      "$value": "#a175f4"
+    },
+    "cyan": {
+      "$type": "color",
+      "$value": "#4bb8cf"
+    },
+    "warning": {
+      "$type": "color",
+      "$value": "#d09a56"
+    },
+    "danger": {
+      "$type": "color",
+      "$value": "#d8657d"
+    }
+  },
+  "surface": {
+    "glass": {
+      "$type": "color",
+      "$value": "rgba(255,255,255,.55)"
+    },
+    "glassStrong": {
+      "$type": "color",
+      "$value": "rgba(255,255,255,.72)"
+    },
+    "line": {
+      "$type": "color",
+      "$value": "rgba(50,66,84,.11)"
+    }
+  },
+  "geometry": {
+    "shellMax": {
+      "$type": "dimension",
+      "$value": "468px"
+    },
+    "shellRadius": {
+      "$type": "dimension",
+      "$value": "26px"
+    },
+    "micSize": {
+      "$type": "dimension",
+      "$value": "142px"
+    },
+    "micRing": {
+      "$type": "dimension",
+      "$value": "168px"
+    },
+    "iconAction": {
+      "$type": "dimension",
+      "$value": "34px"
+    },
+    "dockIconColumn": {
+      "$type": "dimension",
+      "$value": "42px"
+    },
+    "dockControlHeight": {
+      "$type": "dimension",
+      "$value": "44px"
+    }
+  },
+  "motion": {
+    "fast": {
+      "$type": "duration",
+      "$value": "140ms"
+    },
+    "base": {
+      "$type": "duration",
+      "$value": "180ms"
+    },
+    "sheet": {
+      "$type": "duration",
+      "$value": "220ms"
+    },
+    "transcriptEnter": {
+      "$type": "duration",
+      "$value": "420ms"
+    }
+  }
+}

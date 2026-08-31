@@ -6,7 +6,8 @@ const report = {
   createdAt: "2026-08-28T00:00:00.000Z",
   appVersion: "test",
   language: "en",
-  kind: "missed",
+  kind: "late",
+  timing: "1-2",
   expected: "Matthew 19:20",
   caught: "Mark 19:20",
   note: "test",
@@ -14,7 +15,7 @@ const report = {
   actualAudioSeconds: 1,
   context: {},
   latestReference: null,
-  transcripts: [{ text: "Matthew nineteen twenty" }],
+  transcripts: Array.from({ length: 120 }, (_, index) => ({ text: `Transcript line ${index + 1}` })),
   browser: "node",
   pageUrl: "https://example.invalid",
   schemaVersion: 1,
@@ -23,6 +24,8 @@ const report = {
 
 const metadata = feedbackMetadata(report);
 assert.equal(metadata.expected, "Matthew 19:20");
+assert.equal(metadata.timing, "1-2");
+assert.equal(metadata.transcripts.length, 120);
 assert.equal("audioBlob" in metadata, false);
 assert.equal("pageUrl" in metadata, false);
 

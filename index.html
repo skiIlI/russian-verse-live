@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#171717" />
-  <meta name="description" content="Free Russian and English sermon Bible verse detector." />
+  <meta name="theme-color" content="#eef3f8" />
+  <meta name="description" content="Private Russian and English sermon Bible verse detector." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Verse Listener" />
@@ -12,296 +12,212 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=13" />
+  <script>
+    try {
+      const stored = localStorage.getItem("verse-theme");
+      document.documentElement.dataset.theme = stored || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    } catch { document.documentElement.dataset.theme = "light"; }
+  </script>
+  <link rel="stylesheet" href="styles.css?v=26" />
 </head>
 <body>
-  <main class="app-shell">
-    <header class="app-header">
+  <svg width="0" height="0" class="symbol-library" aria-hidden="true">
+    <symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></symbol>
+    <symbol id="settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21h-4v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14v-4a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3h4a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9A1.7 1.7 0 0 0 21 10v4a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+    <symbol id="more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="transcript" viewBox="0 0 24 24"><path d="M4 5h16M4 10h12M4 15h16M4 20h9"/></symbol>
+    <symbol id="lab" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M8 15h8"/></symbol>
+    <symbol id="volume" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+    <symbol id="flag" viewBox="0 0 24 24"><path d="M5 22V4M5 4h11l-1 4 1 4H5"/></symbol>
+    <symbol id="x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+    <symbol id="play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></symbol>
+    <symbol id="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  </svg>
+
+  <main class="app" id="app">
+    <header class="top">
       <strong>Verse Listener</strong>
-      <div class="header-actions">
-        <button id="moreButton" class="icon-button" type="button" aria-label="More options" title="More options">•••</button>
-        <button id="themeButton" class="icon-button" type="button" aria-label="Toggle theme" title="Toggle theme">◐</button>
+      <div class="top-actions">
+        <button type="button" id="settingsBtn" aria-label="Settings"><svg class="ico"><use href="#settings"/></svg></button>
+        <button type="button" id="moreBtn" aria-label="More"><svg class="ico"><use href="#more"/></svg></button>
       </div>
     </header>
 
-    <section class="content" aria-labelledby="liveAudioHeading">
-      <div class="section-heading">
-        <h1 id="liveAudioHeading">Live Audio</h1>
-        <span id="phase" class="phase"><i></i><span>Not started</span></span>
+    <section class="center" aria-label="Verse listener">
+      <div class="status" id="phase"><i class="status-dot"></i><span id="statusText">Ready to listen</span></div>
+      <button class="mic" id="heroMic" type="button" aria-label="Start listening"><svg class="ico lg"><use href="#mic"/></svg></button>
+      <div class="reference-wrap">
+        <i class="reference-glow"></i>
+        <h1 id="reference">Ready <span>to listen</span></h1>
       </div>
-
-      <article id="listenerCard" class="listener-card">
-        <div class="listener-top">
-          <div class="listener-title-row">
-            <div id="listenerIcon" class="listener-icon" aria-hidden="true">📖</div>
-            <div class="listener-copy">
-              <h2>Bible Verse Detector</h2>
-              <p id="message">Ready to listen for Russian Bible references.</p>
-            </div>
-          </div>
-
-          <div id="languageSwitch" class="language-switch" role="group" aria-label="Listening language">
-            <button class="language active" type="button" data-language="ru" aria-pressed="true">Русский</button>
-            <button class="language" type="button" data-language="en" aria-pressed="false">English</button>
-          </div>
-
-          <label class="recognition-model-option" for="recognitionModel">
-            <span>Transcription model</span>
-            <select id="recognitionModel">
-              <option value="base" selected>Whisper Base · Recommended</option>
-              <option value="tiny">Whisper Tiny · Faster</option>
-              <option value="small">Whisper Small · Most accurate</option>
-              <option value="browser">Browser speech service · Fallback</option>
-            </select>
-            <small>Whisper runs locally after its first download and stays cached by your browser.</small>
-          </label>
-          <p id="recognitionModelStatus" class="model-status" aria-live="polite"></p>
-
-          <div class="listener-actions">
-            <button id="startButton" class="action start" type="button">Start Listening</button>
-            <button id="stopButton" class="action stop" type="button" disabled>Stop Listening</button>
-          </div>
-        </div>
-
-        <section class="latest-section" aria-labelledby="latestLabel">
-          <div class="label-row">
-            <h3 id="latestLabel">Latest verse</h3>
-            <span id="contextChip" class="context-chip" hidden></span>
-          </div>
-          <div id="latestEmpty" class="latest-empty">Waiting for a book, chapter, and verse.</div>
-          <div id="latestResult" class="latest-result" hidden>
-            <strong id="latestReference"></strong>
-            <p id="latestSource"></p>
-          </div>
-          <button id="reportFeedbackButton" class="report-button" type="button">Report a missed or wrong verse</button>
-          <p id="feedbackDeliveryStatus" class="feedback-delivery-status" aria-live="polite" hidden></p>
-        </section>
-
-        <section class="transcript-section" aria-labelledby="transcriptLabel">
-          <h3 id="transcriptLabel">Live transcript</h3>
-          <div id="transcriptList" class="transcript-list" aria-live="polite" aria-label="Live speech transcript">
-            <p class="empty-line">No transcript yet.</p>
-          </div>
-        </section>
-
-        <section id="micTestSection" class="folder-section mic-test-section" data-state="idle">
-          <button id="micTestFolderButton" class="folder-button" type="button" aria-expanded="false">
-            <span class="folder-icon" aria-hidden="true">🎚️</span>
-            <span class="folder-title">Mic &amp; recording test</span>
-            <span id="micTestSummary" class="folder-count">Off</span>
-            <span class="chevron" aria-hidden="true">⌄</span>
-          </button>
-          <div id="micTestContent" class="folder-content mic-test-content" hidden>
-            <p class="mic-test-intro">Check the room input, listen live, or record a short playback test. Use headphones before monitoring to prevent feedback.</p>
-
-            <div class="mic-meter-heading">
-              <span>Input level</span>
-              <strong id="micLevelText">0%</strong>
-            </div>
-            <div id="micLevelMeter" class="mic-level-meter" role="meter" aria-label="Microphone input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-            </div>
-
-            <p id="micTestStatus" class="mic-test-status" aria-live="polite"></p>
-            <div class="mic-test-actions mic-test-actions-primary">
-              <button id="startMicButton" class="mic-control start" type="button">Start mic</button>
-              <button id="stopMicButton" class="mic-control stop" type="button" disabled>Stop mic</button>
-            </div>
-            <div class="mic-test-actions mic-test-actions-secondary">
-              <button id="monitorMicButton" class="mic-control monitor" type="button" aria-pressed="false" disabled>Monitor input</button>
-              <button id="recordMicButton" class="mic-control record" type="button">Record</button>
-              <button id="stopRecordingButton" class="mic-control stop-recording" type="button" disabled>Stop recording</button>
-            </div>
-
-            <audio id="liveMonitorAudio" playsinline></audio>
-            <div id="micRecordingResult" class="mic-recording-result" hidden>
-              <div class="mic-recording-heading">
-                <strong>Playback</strong>
-                <span id="micRecordingMeta"></span>
-              </div>
-              <audio id="micRecordingPlayback" controls playsinline preload="metadata" aria-label="Recorded microphone test playback"></audio>
-              <button id="discardRecordingButton" class="discard-recording" type="button">Discard recording</button>
-            </div>
-          </div>
-        </section>
-
-        <section id="transcriptLabSection" class="folder-section transcript-lab-section">
-          <button id="transcriptLabButton" class="folder-button" type="button" aria-expanded="false">
-            <span class="folder-icon transcript-lab-icon" aria-hidden="true">⌁</span>
-            <span class="folder-title">Transcript interpreter</span>
-            <span id="transcriptLabCount" class="folder-count">Ready</span>
-            <span class="chevron" aria-hidden="true">⌄</span>
-          </button>
-          <div id="transcriptLabContent" class="folder-content transcript-lab-content" hidden>
-            <aside id="serviceVideoReview" class="service-video-review" hidden>
-              <div class="service-video-heading">
-                <strong>August 16 service</strong>
-                <a id="serviceVideoLink" href="https://www.youtube.com/watch?v=Y5bbaQmyXKI" target="_blank" rel="noreferrer">Open YouTube</a>
-              </div>
-              <div class="service-video-frame">
-                <iframe id="serviceVideoFrame" title="August 16 service video" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-              </div>
-              <p id="serviceVideoStatus">Click any timestamp to seek and play this service.</p>
-            </aside>
-            <p class="transcript-lab-intro">Paste a sermon transcript to detect references, quoted verses, and spoken or inferred next/back commands.</p>
-
-            <div class="youtube-import">
-              <label for="analysisYoutubeUrl">YouTube service link</label>
-              <div>
-                <input id="analysisYoutubeUrl" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" />
-                <button id="importYoutubeTranscript" type="button">Captions</button>
-              </div>
-              <div class="youtube-transcriber-actions">
-                <button id="startYoutubeTranscription" class="youtube-transcribe" type="button">▶ Play &amp; transcribe</button>
-                <button id="stopYoutubeTranscription" class="youtube-stop" type="button" hidden disabled>■ Stop</button>
-              </div>
-              <audio id="youtubeTranscriberAudio" class="youtube-transcriber-audio" controls playsinline preload="none" hidden></audio>
-              <small>Captions imports YouTube text. Play &amp; transcribe tests the selected model against the actual audio while you hear it.</small>
-            </div>
-
-            <details id="transcriptionBenchmark" class="benchmark-panel">
-              <summary>Four-model transcription benchmark</summary>
-              <p>Compare one sermon selection against YouTube captions, hear the exact audio, annotate results, and export the complete report.</p>
-              <div class="benchmark-range">
-                <label>Start time<input id="benchmarkStart" type="text" inputmode="numeric" value="20:00" placeholder="20:00" /></label>
-                <label>Minutes<input id="benchmarkDuration" type="number" min="1" max="60" step="1" value="10" /></label>
-              </div>
-              <div class="benchmark-selection-actions">
-                <button id="benchmarkRandom" type="button">Shuffle sermon range</button>
-                <button id="benchmarkUsePosition" type="button">Use video position</button>
-                <button id="benchmarkPlay" type="button">▶ Hear selection</button>
-              </div>
-              <audio id="benchmarkAudio" controls playsinline preload="none" hidden></audio>
-              <fieldset id="benchmarkModels" class="benchmark-models">
-                <legend>Models to run</legend>
-                <label><input type="checkbox" value="tiny" checked />Tiny</label>
-                <label><input type="checkbox" value="base" checked />Base</label>
-                <label><input type="checkbox" value="small" checked />Small</label>
-                <label><input type="checkbox" value="browser" checked />Browser</label>
-              </fieldset>
-              <div class="benchmark-run-actions">
-                <button id="benchmarkRun" class="benchmark-run" type="button">Run selected models</button>
-                <button id="benchmarkStop" class="benchmark-stop" type="button" hidden>Stop</button>
-              </div>
-              <small>Whisper models run locally in a worker. The browser model runs in real time and plays the selected audio.</small>
-              <p id="benchmarkStatus" class="benchmark-status" aria-live="polite"></p>
-              <p id="benchmarkRecommendation" class="benchmark-recommendation"></p>
-              <div id="benchmarkResults" class="benchmark-results"></div>
-              <div class="benchmark-export-actions">
-                <button id="benchmarkExportText" type="button" disabled>Export TXT</button>
-                <button id="benchmarkExportJson" type="button" disabled>Export JSON</button>
-              </div>
-            </details>
-
-            <div class="analysis-language-switch" role="group" aria-label="Transcript language">
-              <button class="analysis-language active" type="button" data-analysis-language="ru" aria-pressed="true">Русский · Synodal</button>
-              <button class="analysis-language" type="button" data-analysis-language="en" aria-pressed="false">English · NASB profile</button>
-            </div>
-
-            <label class="analysis-focus-option">
-              <input id="analysisFocusSermons" type="checkbox" checked />
-              <span><strong>Focus on sermon speech</strong><small>Ignore detected prayers and music</small></span>
-            </label>
-
-            <label class="analysis-input-label" for="analysisTranscript">Transcript</label>
-            <textarea id="analysisTranscript" class="analysis-textarea" rows="9" spellcheck="false" placeholder="Paste timestamped or plain transcript text…"></textarea>
-
-            <div class="analysis-actions">
-              <button id="loadServiceTranscript" class="analysis-secondary" type="button">Load Aug 16 service</button>
-              <button id="analyzeTranscript" class="analysis-primary" type="button">Detect verses</button>
-            </div>
-            <p id="analysisStatus" class="analysis-status" aria-live="polite">Russian and English corpora load only when analysis starts.</p>
-
-            <div id="analysisResult" class="analysis-result" hidden>
-              <div class="analysis-summary" aria-label="Analysis summary">
-                <span><strong id="analysisReadingCount">0</strong> readings</span>
-                <span><strong id="analysisReferenceCount">0</strong> references</span>
-                <span><strong id="analysisNavigationCount">0</strong> moves</span>
-                <span><strong id="analysisUniqueCount">0</strong> unique</span>
-              </div>
-
-              <div class="analysis-view-toolbar" aria-label="Timeline copy actions">
-                <button id="copyAnalysisOutput" class="analysis-copy" type="button">Copy</button>
-                <button id="copyCompleteAnalysis" class="analysis-copy analysis-copy-all" type="button" disabled>Copy all</button>
-              </div>
-              <div id="analysisOutput" class="analysis-output"></div>
-            </div>
-          </div>
-        </section>
-
-        <section id="excerptFolder" class="folder-section">
-          <button id="folderButton" class="folder-button" type="button" aria-expanded="false">
-            <span class="folder-icon" aria-hidden="true">📁</span>
-            <span class="folder-title">Test excerpts</span>
-            <span class="folder-count">5</span>
-            <span class="chevron" aria-hidden="true">⌄</span>
-          </button>
-          <div id="folderContent" class="folder-content" hidden>
-            <div class="mode-switch" role="group" aria-label="Excerpt playback mode">
-              <button class="mode active" type="button" data-mode="direct" aria-pressed="true">🔇 Direct</button>
-              <button class="mode" type="button" data-mode="audible" aria-pressed="false">🔊 Speaker</button>
-            </div>
-            <div id="excerptList" class="excerpt-list"></div>
-            <p id="testNote" class="test-note">Direct runs the parser. Speaker also plays the sermon excerpt.</p>
-          </div>
-        </section>
-      </article>
+      <p id="sourceText">Waiting for a book, chapter, and verse.</p>
+      <button class="peek" id="peekBtn" type="button">Peek at live transcript</button>
+      <div class="mode" aria-label="Listener preferences">
+        <button type="button" data-pref="language" id="languagePill">Русский</button>
+        <button type="button" data-pref="model" id="modelPill">Whisper Small</button>
+        <button type="button" data-pref="pace" id="pacePill">1 sec</button>
+        <button type="button" data-pref="bible" id="biblePill">Synodal</button>
+      </div>
     </section>
+
+    <nav class="bottom" aria-label="Tools">
+      <button type="button" data-sheet="transcript" aria-label="Live transcript"><svg class="ico"><use href="#transcript"/></svg></button>
+      <button type="button" data-sheet="transcriber" aria-label="Service transcriber"><svg class="ico"><use href="#lab"/></svg></button>
+      <button type="button" data-sheet="mic" aria-label="Mic test"><svg class="ico"><use href="#volume"/></svg></button>
+      <button type="button" id="reportFeedbackButton" aria-label="Report feedback"><svg class="ico"><use href="#flag"/></svg></button>
+      <button class="listen" type="button" id="listenBtn">Start listening</button>
+    </nav>
+
+    <div class="popover" id="popover" aria-hidden="true">
+      <div class="popover-head"><strong id="popoverTitle">Choose</strong><button class="popover-close" id="popoverClose" type="button" aria-label="Close"><svg class="ico"><use href="#x"/></svg></button></div>
+      <div class="option-list" id="optionList"></div>
+    </div>
+
+    <div class="sheet-layer" id="sheetLayer" aria-hidden="true">
+      <section class="sheet" id="sheet" aria-labelledby="sheetTitle">
+        <div class="sheet-handle"></div>
+        <header class="sheet-head">
+          <h2 id="sheetTitle">Live transcript</h2>
+          <div class="sheet-head-actions">
+            <button type="button" id="reportTranscriptButton" aria-label="Report a missed verse from the transcript" title="Report a missed verse" hidden><svg class="ico"><use href="#flag"/></svg></button>
+            <button type="button" id="toggleTranscriptPlayback" aria-label="Pause transcript" hidden><svg class="ico"><use href="#pause"/></svg></button>
+            <span id="sheetFeedbackActions" class="sheet-head-actions" hidden>
+              <button type="button" id="recentTranscriptBtn" aria-label="Recent transcript"><svg class="ico"><use href="#transcript"/></svg></button>
+              <button type="button" id="recentAudioBtn" aria-label="Recent audio"><svg class="ico"><use href="#volume"/></svg></button>
+            </span>
+          </div>
+          <button type="button" id="sheetClose" aria-label="Close"><svg class="ico"><use href="#x"/></svg></button>
+        </header>
+
+        <div id="sheetContent">
+          <section class="sheet-panel transcript-panel" data-sheet-panel="transcript" hidden>
+            <div class="sheet-label"><span>Live transcript</span><strong id="transcriptState">Waiting</strong></div>
+            <div class="transcript-viewport" id="transcriptViewport">
+              <div class="transcript-stream" id="transcriptList" aria-live="polite" aria-label="Live speech transcript"><div class="empty-state">No transcript yet.</div></div>
+              <div id="transcriptLoading" class="loading-row" hidden>
+                <span>Listening…</span>
+                <div id="transcriptLoadingProgress" class="loading-wave" role="progressbar" aria-label="Next finalized transcript"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sheet-panel" data-sheet-panel="transcriber" hidden>
+            <section class="sheet-section">
+              <div class="sheet-label"><span>Source text</span><strong id="sourceCount">0 / 50,000</strong></div>
+              <textarea class="styled-textarea analyzer-input" id="analysisTranscript" maxlength="50000" placeholder="Paste transcript or source text here…"></textarea>
+              <button class="analyze-button" id="analyzeTranscript" type="button">Analyze transcript &amp; detect verses</button>
+              <div id="analysisStatus" class="status-line" aria-live="polite"></div>
+            </section>
+            <section class="sheet-section transcriber-report" id="analyzerReport" hidden>
+              <div class="sheet-label"><span>Detected verses</span><strong id="analysisFoundCount">0 found</strong></div>
+              <div class="report-items spacious" id="analysisOutput"></div>
+            </section>
+          </section>
+
+          <section class="sheet-panel" id="micTestSection" data-sheet-panel="mic" data-state="idle" hidden>
+            <button id="micTestFolderButton" class="sr-only" type="button" tabindex="-1" aria-hidden="true"></button>
+            <div id="micTestContent">
+              <section class="sheet-section">
+                <div class="sheet-label"><span>Input level</span><strong id="micLevelText">0%</strong></div>
+                <div id="micLevelMeter" class="meter" role="meter" aria-label="Microphone input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div id="micTestStatus" class="status-line" aria-live="polite"></div>
+                <div class="btn-row"><button id="startMicButton" class="btn primary" type="button">Start mic</button><button id="stopMicButton" class="btn" type="button" disabled>Stop mic</button></div>
+              </section>
+              <section class="sheet-section">
+                <div class="sheet-label"><span>Monitor &amp; record</span><strong id="micTestSummary">Local only</strong></div>
+                <div class="btn-row"><button id="monitorMicButton" class="btn" type="button" aria-pressed="false" disabled>Monitor input</button><button id="recordMicButton" class="btn record-btn" type="button">Record</button></div>
+                <button id="stopRecordingButton" class="btn rose full-button" type="button" disabled>Stop recording</button>
+                <audio id="liveMonitorAudio" playsinline></audio>
+                <div id="micRecordingResult" class="playback-card glass-row" hidden>
+                  <div><strong>Test recording</strong><span id="micRecordingMeta"></span></div>
+                  <audio id="micRecordingPlayback" controls playsinline preload="metadata" aria-label="Recorded microphone test playback"></audio>
+                  <button id="discardRecordingButton" class="discard" type="button">Discard</button>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="sheet-panel" data-sheet-panel="feedback" id="feedbackSheetPanel" hidden><div id="feedbackSheetHost"></div></section>
+
+          <section class="sheet-panel" data-sheet-panel="settings" hidden>
+            <section class="sheet-section">
+              <div class="sheet-label"><span>Language</span></div>
+              <div class="choice-row" id="languageChoices"><button class="choice language" type="button" data-language="ru">Русский</button><button class="choice language" type="button" data-language="en">English</button></div>
+            </section>
+            <section class="sheet-section">
+              <div class="sheet-label"><span>Transcription model</span></div>
+              <select id="recognitionModel" class="sr-only" tabindex="-1" aria-hidden="true"><option value="base">Whisper Base · Faster</option><option value="small" selected>Whisper Small · Recommended</option><option value="medium">Whisper Medium · Higher accuracy</option><option value="largeTurbo">Whisper Large Turbo · Highest tier</option></select>
+              <div class="select-control" data-select-for="recognitionModel"><button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span>Whisper Small · Recommended</span></button><div class="select-menu" role="listbox"></div></div>
+            </section>
+            <section class="sheet-section">
+              <div class="sheet-label"><span>Whisper refresh rate</span></div>
+              <select id="recognitionPace" class="sr-only" tabindex="-1" aria-hidden="true"><option value="1000" selected>Live · Every 1 second</option><option value="1500">Balanced · Every 1.5 seconds</option><option value="2000">Battery saver · Every 2 seconds</option></select>
+              <div class="select-control" data-select-for="recognitionPace"><button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span>Live · Every 1 second</span></button><div class="select-menu" role="listbox"></div></div>
+            </section>
+            <section class="sheet-section">
+              <div class="sheet-label"><span>Bible version</span></div>
+              <select id="bibleVersion" class="sr-only" tabindex="-1" aria-hidden="true"></select>
+              <div class="select-control" data-select-for="bibleVersion"><button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span>Russian Synodal</span></button><div class="select-menu" role="listbox"></div></div>
+              <div id="bibleVersionNote" class="mini-note"></div>
+            </section>
+            <section class="sheet-section">
+              <div class="sheet-label"><span>Appearance</span></div>
+              <div class="choice-row"><button class="choice theme-choice" type="button" data-theme-choice="light">Light glass</button><button class="choice theme-choice" type="button" data-theme-choice="dark">Dark glass</button></div>
+            </section>
+          </section>
+
+          <section class="sheet-panel" data-sheet-panel="more" hidden>
+            <div class="menu-list">
+              <button class="menu-item" id="nativeInstallButton" type="button"><i class="menu-icon"><svg class="ico"><use href="#download"/></svg></i><span><strong>Install app</strong><span>Add Verse Listener to this device</span></span></button>
+              <button class="menu-item" id="downloadSourceButton" type="button"><i class="menu-icon"><svg class="ico"><use href="#download"/></svg></i><span><strong>Download current source context</strong><span>Assemble the current GitHub main source</span></span></button>
+              <a class="menu-item" href="https://github.com/skiIlI/russian-verse-live" target="_blank" rel="noreferrer"><i class="menu-icon">↗</i><span><strong>Open GitHub repository</strong><span>Current main branch</span></span></a>
+            </div>
+            <div id="sourceProgressBox" class="download-box glass-row" hidden><div class="download-top"><strong id="sourceDownloadStatus"></strong><span id="sourceProgressText"></span></div><div class="progress-track"><i id="sourceProgressFill" class="progress-fill"></i></div></div>
+            <p id="installInstructions" class="mini-note"></p>
+            <p class="mini-note">Test recordings stay local. Feedback audio is sent only when you explicitly submit a report.</p>
+          </section>
+        </div>
+      </section>
+    </div>
+
+    <div class="feedback-layer" id="feedbackLayer" aria-hidden="true">
+      <button class="feedback-backdrop" id="feedbackBackdrop" type="button" aria-label="Close feedback"></button>
+      <section class="feedback-panel" aria-labelledby="feedbackTitle">
+        <header class="feedback-panel-head"><h2 id="feedbackTitle">Report feedback</h2><div class="feedback-overlay-actions"><button type="button" id="overlayRecentTranscript" aria-label="Recent transcript"><svg class="ico"><use href="#transcript"/></svg></button><button type="button" id="overlayRecentAudio" aria-label="Recent audio"><svg class="ico"><use href="#volume"/></svg></button><button type="button" id="closeFeedbackButton" aria-label="Close"><svg class="ico"><use href="#x"/></svg></button></div></header>
+        <div id="feedbackOverlayHost"></div>
+      </section>
+    </div>
+
+    <div id="feedbackFormSurface">
+      <div class="feedback-mini" id="feedbackMini" hidden><strong id="feedbackMiniTitle"></strong><p id="feedbackTranscriptPreview"></p><audio id="feedbackAudioPreview" controls preload="metadata" hidden></audio><p id="feedbackAudioEmpty" hidden>Start listening first to preview recent microphone audio.</p></div>
+      <form id="feedbackForm">
+        <section class="sheet-section feedback-fields">
+          <div class="field-block">
+            <label>Issue type</label>
+            <select id="feedbackKind" class="sr-only" tabindex="-1" aria-hidden="true"><option value="missed">📭 Verse missed</option><option value="late">⏱️ Detected too late</option><option value="misinterpreted">🗣️ Misinterpreted speech</option><option value="wrong" selected>📖 Wrong verse</option><option value="other">📝 Other</option></select>
+            <div class="select-control" data-select-for="feedbackKind"><button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span>📖 Wrong verse</span></button><div class="select-menu" role="listbox"></div></div>
+          </div>
+          <div class="field-block" id="feedbackTimingBlock" hidden>
+            <label>How late?</label>
+            <select id="feedbackTiming" class="sr-only" tabindex="-1" aria-hidden="true"><option value="1-2" selected>🐢 1–2 seconds late</option><option value="3-5">⌛ 3–5 seconds late</option><option value="5-plus">🚨 5+ seconds late</option></select>
+            <div class="select-control" data-select-for="feedbackTiming"><button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span>🐢 1–2 seconds late</span></button><div class="select-menu" role="listbox"></div></div>
+          </div>
+          <div class="field-block">
+            <label>Include recent audio</label>
+            <select id="feedbackDuration" class="sr-only" tabindex="-1" aria-hidden="true"><option value="15" selected>🎧 Last 15 seconds</option><option value="30">🔉 Last 30 seconds</option><option value="45">🎙️ Last 45 seconds</option><option value="60">⏺️ Last 60 seconds</option></select>
+            <div class="select-control" data-select-for="feedbackDuration"><button class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span>🎧 Last 15 seconds</span></button><div class="select-menu" role="listbox"></div></div>
+          </div>
+          <div class="field-block"><label for="feedbackNote">Notes <span>optional</span></label><textarea class="styled-textarea" id="feedbackNote" placeholder="Add anything useful…"></textarea></div>
+        </section>
+        <section class="sheet-section"><button class="btn primary full-button" id="sendFeedbackButton" type="submit">Send feedback</button><div id="feedbackStatus" class="status-line" aria-live="polite"></div></section>
+      </form>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+    <p id="feedbackDeliveryStatus" class="sr-only" aria-live="polite" hidden></p>
   </main>
-
-  <dialog id="feedbackDialog" class="app-dialog feedback-dialog">
-    <button id="closeFeedbackButton" class="dialog-close" type="button" aria-label="Close">×</button>
-    <div class="dialog-icon">📝</div>
-    <h2>Report detector feedback</h2>
-    <p>Send the recent transcript and up to 60 seconds of microphone audio.</p>
-    <form id="feedbackForm">
-      <label class="field-label" for="feedbackKind">What happened?</label>
-      <select id="feedbackKind" class="field-control">
-        <option value="missed">A verse was missed</option>
-        <option value="wrong">The wrong verse was caught</option>
-        <option value="other">Something else</option>
-      </select>
-
-      <label class="field-label" for="feedbackDuration">Include recent audio</label>
-      <select id="feedbackDuration" class="field-control">
-        <option value="15" selected>Last 15 seconds</option>
-        <option value="30">Last 30 seconds</option>
-        <option value="45">Last 45 seconds</option>
-        <option value="60">Last 60 seconds</option>
-      </select>
-
-      <details id="feedbackCorrectionDetails" class="feedback-details">
-        <summary>Add a correction and explain what was wrong</summary>
-        <label class="field-label" for="feedbackExpected">What was said / expected?</label>
-        <textarea id="feedbackExpected" class="field-control" rows="2" placeholder="Example: Matthew chapter 19, verse 20"></textarea>
-        <label class="field-label" for="feedbackCaught">What did the app catch?</label>
-        <input id="feedbackCaught" class="field-control" type="text" placeholder="Example: Mark 19:20" />
-        <label class="field-label" for="feedbackNote">What was wrong?</label>
-        <textarea id="feedbackNote" class="field-control" rows="3" placeholder="Explain the misconception or what the detector should do instead"></textarea>
-      </details>
-
-      <details class="feedback-details feedback-preview">
-        <summary>View recent transcript</summary>
-        <p id="feedbackTranscriptPreview">No transcript captured yet.</p>
-      </details>
-      <p id="feedbackStatus" class="dialog-status" aria-live="polite"></p>
-      <button id="sendFeedbackButton" class="dialog-primary wide" type="submit">Send feedback</button>
-    </form>
-  </dialog>
-
-  <dialog id="moreDialog" class="app-dialog">
-    <button id="closeMoreButton" class="dialog-close" type="button" aria-label="Close">×</button>
-    <div class="dialog-icon">•••</div>
-    <h2>More</h2>
-    <p id="installInstructions">Use your browser menu to add this app to your Home Screen.</p>
-    <button id="nativeInstallButton" class="dialog-primary" type="button" hidden>Install app</button>
-    <button id="downloadSourceButton" class="dialog-secondary wide" type="button">Download current source context</button>
-    <a class="dialog-link" href="https://github.com/skiIlI/russian-verse-live" target="_blank" rel="noreferrer">Open GitHub repository</a>
-    <p id="sourceDownloadStatus" class="dialog-status" aria-live="polite"></p>
-  </dialog>
-
   <noscript>This listener requires JavaScript.</noscript>
-  <script type="module" src="app.js?v=13"></script>
+  <script type="module" src="app.js?v=26"></script>
 </body>
 </html>

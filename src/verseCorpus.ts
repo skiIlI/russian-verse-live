@@ -54,6 +54,8 @@ const RU_ASR_EQUIVALENTS: Record<string, string> = {
 
 export function normalizeForMatching(text: string): string {
   return text
+    .replace(/\\\+w\s+([^|\\]+)\|[^\\]*\\\+w\*/g, "$1")
+    .replace(/\\\+?[\p{L}\p{N}]+\*?/gu, " ")
     .normalize("NFKD")
     .toLocaleLowerCase()
     .replace(/[\u0300-\u036f]/g, "")

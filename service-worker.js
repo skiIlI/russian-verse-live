@@ -1,42 +1,37 @@
-const CACHE_NAME = "verse-listener-v13";
+const CACHE_NAME = "verse-listener-v26";
+const APP_CACHE_PREFIX = "verse-listener-v";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=13",
-  "./app.js?v=13",
-  "./parser.js?v=13",
-  "./interpreter.js?v=13",
-  "./transcript-lab.js?v=13",
-  "./transcript-feedback.js?v=13",
-  "./transcript-review.js?v=13",
-  "./youtube-review.js?v=13",
-  "./youtube-audio-transcriber.js?v=13",
-  "./transcript-timeline.js?v=13",
-  "./transcription-benchmark.js?v=13",
-  "./transcription-benchmark-core.js?v=13",
-  "./whisper-session.js?v=13",
-  "./whisper-worker.js?v=13",
-  "./audio-ring-buffer.js?v=13",
-  "./audio-worklet.js?v=13",
-  "./feedback-store.js?v=13",
-  "./feedback-api.js?v=13",
-  "./feedback-ui.js?v=13",
-  "./source-context.js?v=13",
-  "./excerpts.js?v=13",
-  "./more-menu.js?v=13",
-  "./mic-level-meter.js?v=13",
-  "./mic-recording.js?v=13",
-  "./mic-test.js?v=13",
+  "./styles.css?v=26",
+  "./app.js?v=26",
+  "./parser.js?v=26",
+  "./interpreter.js?v=26",
+  "./listener-preferences.js?v=26",
+  "./select-control.js?v=26",
+  "./ui-shell.js?v=26",
+  "./live-quote-detector.js?v=26",
+  "./transcript-history.js?v=26",
+  "./transcript-progress.js?v=26",
+  "./service-transcriber.js?v=26",
+  "./whisper-session.js?v=26",
+  "./whisper-download-progress.js?v=26",
+  "./whisper-models.js?v=26",
+  "./whisper-worker.js?v=26",
+  "./audio-ring-buffer.js?v=26",
+  "./audio-worklet.js?v=26",
+  "./feedback-store.js?v=26",
+  "./feedback-api.js?v=26",
+  "./feedback-ui.js?v=26",
+  "./source-context.js?v=26",
+  "./more-menu.js?v=26",
+  "./mic-level-meter.js?v=26",
+  "./mic-recording.js?v=26",
+  "./mic-test.js?v=26",
   "./data/russyn.json",
   "./data/engwebp.json",
-  "./transcripts/0000 secondsлет назад. Это было вче.txt",
   "./manifest.webmanifest",
-  "./assets/icon.svg",
-  "./assets/malachi-4-5-6.wav",
-  "./assets/first-corinthians-16-14.wav",
-  "./assets/mark-10-13.wav",
-  "./assets/genesis-18-19.wav",
-  "./assets/luke-12-13.wav"
+  "./assets/icon.svg"
 ];
 
 self.addEventListener("install", (event) => {
@@ -47,7 +42,9 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys
+        .filter((key) => key.startsWith(APP_CACHE_PREFIX) && key !== CACHE_NAME)
+        .map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
@@ -55,6 +52,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
   if (url.origin === self.location.origin && url.pathname.startsWith("/api/")) return;
   if (url.origin === self.location.origin && url.pathname.includes("/data/")) {
     event.respondWith(

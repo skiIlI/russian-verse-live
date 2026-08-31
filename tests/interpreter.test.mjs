@@ -19,6 +19,8 @@ assert.equal(russianDocument.license, "Public Domain");
 assert.equal(englishDocument.license, "Public Domain");
 assert.ok(russianDocument.verses.length > 31_000);
 assert.ok(englishDocument.verses.length > 31_000);
+const cleanJohnVerse = new VerseCorpusIndex(englishDocument).byKey.get("john:7:37");
+assert.ok(!cleanJohnVerse?.meaningful.includes("strong"), "Strong's markup must not enter the English quote index");
 
 const segments = parseTranscript(transcript);
 assert.equal(segments.length, 832);
@@ -50,6 +52,137 @@ assert.deepEqual(
   ["1 Corinthians 13:1", "1 Corinthians 13:2"],
 );
 assert.equal(english.events.find((event) => event.type === "advance")?.reference?.canonical, "1 Corinthians 13:2");
+
+const godSaidQuote = await interpretTranscript(
+  "Take a look at what God said. My presence will go with you and I will give you rest.",
+  "en",
+  { corpus: new VerseCorpusIndex(englishDocument) },
+);
+
+const spokenPsalmRange = await interpretTranscript(
+  "Psalm 46, two and three.",
+  "en",
+  { corpus: new VerseCorpusIndex(englishDocument) },
+);
+
+const russianReportedRange = await interpretTranscript([
+  "Давайте мы откроем Левит.",
+  "23 глава, 15-16 стих, хочу зачитать.",
+  "Отсчитайте себе от первого дня после праздника, от того дня, в который приносите сноп потрясания, семь полных недель.",
+  "До первого дня после седьмой недели отсчитайте пятьдесят дней, и тогда принесите новое хлебное приношение Господу.",
+].join("\n"), "ru", { corpus: new VerseCorpusIndex(russianDocument) });
+
+const sequentialPsalmReading = await interpretTranscript([
+  "Psalm 102. I'm letting the Psalm teach us, so let's read what it says.",
+  "Of old, you laid the foundation of the earth, and the heavens are the work of your hands.",
+  "But you will endure. Yes, they will all grow old like a garment; like a cloak, you will change them, and they will be changed.",
+  "But you are the same, and your years will have no end.",
+  "The children of your servants will continue, and their descendants will be established before you.",
+].join("\n"), "en", { corpus: new VerseCorpusIndex(englishDocument) });
+assert.deepEqual(
+  sequentialPsalmReading.events.filter((event) => event.type === "read").map((event) => event.reference.canonical),
+  ["Psalms 102:25", "Psalms 102:26", "Psalms 102:27", "Psalms 102:28"],
+  "a chapter-context reading must surface every consecutive verse, including short middle verses",
+);
+assert.equal(
+  spokenPsalmRange.events.find((event) => event.basis === "explicit-reference")?.reference?.canonical,
+  "Psalms 46:2–3",
+  "a spoken verse range should resolve before the reading begins",
+);
+assert.equal(
+  russianReportedRange.events.find((event) => event.basis === "explicit-reference")?.reference?.canonical,
+  "Leviticus 23:15–16",
+  "the reported Russian numeric range should open at verse 15",
+);
+assert.deepEqual(
+  russianReportedRange.events.filter((event) => event.type === "read").map((event) => event.reference.canonical),
+  ["Leviticus 23:15", "Leviticus 23:16"],
+  "a Russian range should actively follow both consecutive verses",
+);
+assert.equal(
+  godSaidQuote.events.find((event) => event.type === "read")?.reference?.canonical,
+  "Exodus 33:14",
+  "an explicit God-said introduction should authorize a strong short Scripture quote",
+);
+
+const signaturePsalmOpening = await interpretTranscript([
+  "verses 10 and 11. Notice what",
+  "the psalmist says, Be still at",
+  "know that I am God.",
+].join("\n"), "en", { corpus: new VerseCorpusIndex(englishDocument) });
+assert.equal(
+  signaturePsalmOpening.events.find((event) => event.type === "read")?.reference?.canonical,
+  "Psalms 46:10",
+  "a cued three-anchor signature opening should identify a prominent verse immediately",
+);
+
+const possessiveJohnReading = await interpretTranscript([
+  "of water springing up into everlasting life and again in John's",
+  "7 on the last day that great",
+  "day of the feast, Jesus stood and cried out saying,",
+  "If any man thirsts, let him come to me and drink.",
+  "He who believes in me as the scripture has said out of his heart will flow rivers of living water.",
+].join("\n"), "en", { corpus: new VerseCorpusIndex(englishDocument) });
+assert.equal(possessiveJohnReading.events.find((event) => event.type === "context")?.reference?.canonical, "John 7");
+assert.ok(
+  possessiveJohnReading.events.some((event) => event.type === "read" && event.reference?.canonical === "John 7:37"),
+  "John's 7 plus the quoted text must identify John 7:37",
+);
+
+const consecutiveVerse = await interpretTranscript([
+  "Open 2 Kings 18:6.",
+  englishDocument.verses.find(([book, chapter, verse]) => book === "2-kings" && chapter === 18 && verse === 6)[3],
+  "And the LORD was with him; wherever he went he prospered.",
+].join("\n"), "en", { corpus: new VerseCorpusIndex(englishDocument) });
+assert.ok(
+  consecutiveVerse.events.some((event) => event.type === "read" && event.reference?.canonical === "2 Kings 18:7"),
+  "a strong opening of the immediate next verse should advance before most of that verse is read",
+);
+assert.ok(
+  consecutiveVerse.events.some((event) => event.type === "advance" && event.reference?.canonical === "2 Kings 18:7"),
+  "an inferred consecutive reading should surface a next-verse boundary",
+);
+
+const weakConsecutiveCue = await interpretTranscript([
+  "Open 2 Kings 18:6.",
+  englishDocument.verses.find(([book, chapter, verse]) => book === "2-kings" && chapter === 18 && verse === 6)[3],
+  "And the LORD was with him.",
+].join("\n"), "en", { corpus: new VerseCorpusIndex(englishDocument) });
+assert.ok(
+  !weakConsecutiveCue.events.some((event) => event.type === "read" && event.reference?.canonical === "2 Kings 18:7"),
+  "a generic one-word overlap must not advance to the next verse",
+);
+
+const anticipatedEnglishRange = await interpretTranscript([
+  "Open Matthew 7:7-9.",
+  "Knock, and it will be opened for you.",
+  "For everyone who asks receives. He who seeks finds. To him who knocks it will be opened.",
+].join("\n"), "en", { corpus: new VerseCorpusIndex(englishDocument) });
+assert.deepEqual(
+  anticipatedEnglishRange.events.filter((event) => event.type === "advance").map((event) => event.reference?.canonical),
+  ["Matthew 7:8", "Matthew 7:9"],
+  "an explicit range should advance from each strong ending before the following verse begins",
+);
+
+const anticipatedRussianRange = await interpretTranscript([
+  "Евангелие от Матфея, глава 7, стихи 7 по 9.",
+  "стучите, и отворят вам.",
+  "ибо всякий просящий получает, и ищущий находит, и стучащему отворят.",
+].join("\n"), "ru", { corpus: new VerseCorpusIndex(russianDocument) });
+assert.deepEqual(
+  anticipatedRussianRange.events.filter((event) => event.type === "advance").map((event) => event.reference?.canonical),
+  ["Matthew 7:8", "Matthew 7:9"],
+  "Russian readings need the same proactive range progression as English",
+);
+
+const anticipatedOpenEnded = await interpretTranscript([
+  "Open Matthew 22:11.",
+  "He saw there a man who didn't have on wedding clothing.",
+].join("\n"), "en", { corpus: new VerseCorpusIndex(englishDocument) });
+assert.ok(
+  anticipatedOpenEnded.events.some((event) => event.type === "advance" && event.reference?.canonical === "Matthew 22:12"),
+  "a strong ending should prepare the next verse even when no range was announced",
+);
 
 const navigation = await interpretTranscript([
   "Open Matthew 12:24.",

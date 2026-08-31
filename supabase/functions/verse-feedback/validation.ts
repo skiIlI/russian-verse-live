@@ -2,7 +2,8 @@ export type FeedbackMetadata = {
   id: string;
   appVersion: string;
   language: 'ru' | 'en';
-  kind: 'missed' | 'wrong' | 'other';
+  kind: 'missed' | 'late' | 'misinterpreted' | 'wrong' | 'other';
+  timing: '' | '1-2' | '3-5' | '5-plus';
   expected: string;
   caught: string;
   note: string;
@@ -42,7 +43,7 @@ function object(value: unknown): Record<string, unknown> {
 
 function transcripts(value: unknown): FeedbackMetadata['transcripts'] {
   if (!Array.isArray(value)) return [];
-  return value.slice(0, 20).flatMap((entry) => {
+  return value.slice(0, 120).flatMap((entry) => {
     const row = object(entry);
     const transcriptText = text(row.text, 2_000);
     if (!transcriptText) return [];
@@ -58,9 +59,12 @@ function normalizeMetadata(value: unknown): FeedbackMetadata {
   const row = object(value);
   const id = text(row.id, 36);
   const language = row.language === 'en' ? 'en' : row.language === 'ru' ? 'ru' : null;
-  const kind = ['missed', 'wrong', 'other'].includes(String(row.kind))
+  const kind = ['missed', 'late', 'misinterpreted', 'wrong', 'other'].includes(String(row.kind))
     ? row.kind as FeedbackMetadata['kind']
     : null;
+  const timing = ['', '1-2', '3-5', '5-plus'].includes(String(row.timing ?? ''))
+    ? String(row.timing ?? '') as FeedbackMetadata['timing']
+    : '';
   if (!UUID_PATTERN.test(id)) throw new RequestError('Invalid report id.');
   if (!language || !kind) throw new RequestError('Invalid language or feedback type.');
 
@@ -69,6 +73,7 @@ function normalizeMetadata(value: unknown): FeedbackMetadata {
     appVersion: text(row.appVersion, 40),
     language,
     kind,
+    timing,
     expected: text(row.expected, 500),
     caught: text(row.caught, 200),
     note: text(row.note, 2_000),
@@ -124,4 +129,3 @@ export async function parseSubmission(req: Request): Promise<Submission> {
   }
   return { audio, metadata: normalizeMetadata(parsed) };
 }
-

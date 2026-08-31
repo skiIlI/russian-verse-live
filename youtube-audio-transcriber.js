@@ -1,5 +1,5 @@
 import { RollingAudioBuffer } from "./audio-ring-buffer.js?v=13";
-import { WhisperSession, RECOGNITION_MODELS } from "./whisper-session.js?v=13";
+import { WhisperSession, RECOGNITION_MODELS } from "./whisper-session.js?v=22";
 
 export function clockTime(seconds) {
   const total = Math.max(0, Math.floor(seconds || 0));
@@ -12,9 +12,7 @@ export function clockTime(seconds) {
 }
 
 export function configureYouTubeAudioTranscriber({ audio, startButton, stopButton, onText, onStatus, onActiveChange }) {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const buffer = new RollingAudioBuffer(90);
-  let recognition = null;
   let whisper = null;
   let captureStream = null;
   let active = false;
@@ -29,29 +27,6 @@ export function configureYouTubeAudioTranscriber({ audio, startButton, stopButto
     onActiveChange?.(value);
   }
 
-  function startBrowserRecognition(track, language) {
-    if (!SpeechRecognition) throw new Error("Browser speech recognition is unavailable. Choose a local Whisper model.");
-    recognition = new SpeechRecognition();
-    recognition.lang = language === "ru" ? "ru-RU" : "en-US";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.onresult = (event) => {
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        if (event.results[index].isFinal) onText(event.results[index][0]?.transcript ?? "", audio.currentTime);
-      }
-    };
-    recognition.onerror = (event) => onStatus(`Browser transcription: ${event.error}.`, "error");
-    recognition.onend = () => {
-      if (!active || audio.ended || audio.paused) return;
-      window.setTimeout(() => {
-        if (!active) return;
-        try { recognition.start(track); } catch {}
-      }, 300);
-    };
-    recognition.start(track);
-    onStatus("Playing through speakers and transcribing with the browser speech service.", "working");
-  }
-
   async function start({ videoId, model, language }) {
     await stop();
     current = { videoId, model, language };
@@ -64,10 +39,6 @@ export function configureYouTubeAudioTranscriber({ audio, startButton, stopButto
     if (!track) throw new Error("This browser cannot route media audio into the transcriber.");
     captureStream = capture;
     setActive(true);
-    if (model === "browser") {
-      startBrowserRecognition(track, language);
-      return;
-    }
     await buffer.startFromTrack(track);
     whisper = new WhisperSession({
       buffer,
@@ -81,10 +52,6 @@ export function configureYouTubeAudioTranscriber({ audio, startButton, stopButto
 
   async function stop() {
     active = false;
-    if (recognition) {
-      try { recognition.abort(); } catch {}
-      recognition = null;
-    }
     whisper?.stop();
     whisper = null;
     await buffer.stop({ keepAudio: false });

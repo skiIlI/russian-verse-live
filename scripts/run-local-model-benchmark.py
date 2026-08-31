@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--start", type=float, default=1200)
     parser.add_argument("--duration", type=float, default=600)
     parser.add_argument("--language", default="ru")
-    parser.add_argument("--models", nargs="+", default=["tiny", "base", "small"])
+    parser.add_argument("--models", nargs="+", default=["base", "small", "medium", "large-v3-turbo"])
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
     args = parser.parse_args()
     device = args.device
